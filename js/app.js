@@ -598,11 +598,11 @@ function renderAlatGrid() {
               <span class="spec-key"><i class="fa-solid fa-tag"></i> Merk:</span>
               <span class="spec-val">${item.merk}</span>
             </div>
-            <div class="spec-row">
+            <div class="spec-row spec-row-secondary">
               <span class="spec-key"><i class="fa-solid fa-ruler-combined"></i> Ukuran:</span>
               <span class="spec-val">${item.ukuran}</span>
             </div>
-            <div class="spec-row">
+            <div class="spec-row spec-row-secondary">
               <span class="spec-key"><i class="fa-solid fa-earth-asia"></i> Buatan:</span>
               <span class="spec-val">${item.buatan}</span>
             </div>
@@ -615,13 +615,13 @@ function renderAlatGrid() {
           </div>
 
           <div class="item-footer-actions">
-            <button class="btn btn-secondary btn-sm" onclick="showItemDetail('ALAT', '${item.id}')">
-              <i class="fa-solid fa-circle-info"></i> Detail
+            <button class="btn btn-secondary btn-sm btn-item-info" onclick="showItemDetail('ALAT', '${item.id}')" title="Detail ${item.nama}">
+              <i class="fa-solid fa-circle-info"></i> <span class="btn-lbl">Detail</span>
             </button>
-            <button class="btn btn-primary btn-sm" style="flex: 1;" 
+            <button class="btn btn-primary btn-sm btn-item-loan" style="flex: 1;" 
                     onclick="addToCart('ALAT', '${item.id}')" 
                     ${!isAvailable ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-              <i class="fa-solid fa-plus"></i> ${isAvailable ? '+ Pinjam' : 'Kosong'}
+              <i class="fa-solid fa-plus"></i> <span class="btn-lbl-pinjam">${isAvailable ? 'Pinjam' : 'Kosong'}</span>
             </button>
           </div>
         </div>
@@ -658,7 +658,7 @@ function renderFasilitasGrid() {
     return `
       <div class="item-card">
         <div class="item-image-box">
-          <img src="${item.gambar || 'assets/fumehood.jpg'}" alt="${item.nama}" loading="lazy">
+          <img src="${item.gambar || 'assets/fumehood.jpg'}" alt="${item.nama}" loading="lazy" onerror="this.src='assets/fumehood.jpg'">
           <div class="item-badge-top">
             <span class="status-badge ${statusClass}">${item.status}</span>
           </div>
@@ -681,11 +681,13 @@ function renderFasilitasGrid() {
           </div>
 
           <div class="item-footer-actions">
-            <button class="btn btn-secondary btn-sm" onclick="showItemDetail('FASILITAS', '${item.id}')">Info</button>
-            <button class="btn btn-primary btn-sm" style="flex: 1;" 
+            <button class="btn btn-secondary btn-sm btn-item-info" onclick="showItemDetail('FASILITAS', '${item.id}')" title="Detail ${item.nama}">
+              <i class="fa-solid fa-circle-info"></i> <span class="btn-lbl">Info</span>
+            </button>
+            <button class="btn btn-primary btn-sm btn-item-loan" style="flex: 1;" 
                     onclick="addToCart('FASILITAS', '${item.id}')"
                     ${!isAvailable ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-              ${isAvailable ? '+ Pinjam' : 'Penuh'}
+              <span class="btn-lbl-pinjam">${isAvailable ? '+ Pinjam' : 'Penuh'}</span>
             </button>
           </div>
         </div>
@@ -716,14 +718,14 @@ function renderBahanGrid() {
 
   container.innerHTML = filtered.map(item => `
     <div class="item-card" style="border-top: 3px solid #8b5cf6;">
-      <div class="item-body" style="padding-top: 18px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <span style="font-family: var(--font-mono); font-weight: 700; color: #10b981; background: var(--primary-glow); padding: 3px 8px; border-radius: 4px; font-size: 0.88rem;">${item.rumus}</span>
-          <span style="font-size: 0.72rem; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 2px 7px; border-radius: 4px;">${item.klasifikasiK3}</span>
+      <div class="item-body" style="padding-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 4px;">
+          <span style="font-family: var(--font-mono); font-weight: 700; color: #10b981; background: var(--primary-glow); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">${item.rumus}</span>
+          <span style="font-size: 0.65rem; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 2px 5px; border-radius: 4px; white-space: nowrap;">${item.klasifikasiK3}</span>
         </div>
 
-        <h3 class="item-title" style="height: auto; margin-top: 6px;" title="${item.nama}">${item.nama}</h3>
-        <div style="font-size: 0.78rem; color: #38bdf8; font-weight: 600;">${item.jenis}</div>
+        <h3 class="item-title" style="height: auto; min-height: 2.2em; margin-top: 6px;" title="${item.nama}">${item.nama}</h3>
+        <div style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.jenis}</div>
 
         <div class="item-specs-list">
           <div class="spec-row">
@@ -731,13 +733,13 @@ function renderBahanGrid() {
             <span class="spec-val" style="color: #10b981; font-weight: 700; font-family: var(--font-mono);">${item.jumlah} ${item.satuan}</span>
           </div>
           <div class="spec-row">
-            <span class="spec-key">Tempat Simpan:</span>
-            <span class="spec-val">${item.lokasiSimpan}</span>
+            <span class="spec-key">Simpan:</span>
+            <span class="spec-val" title="${item.lokasiSimpan}">${item.lokasiSimpan}</span>
           </div>
         </div>
 
         <div class="item-footer-actions">
-          <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="requestChemicalForPractice('${item.nama}')">
+          <button class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.74rem; padding: 6px 4px;" onclick="requestChemicalForPractice('${item.nama}')">
             <i class="fa-solid fa-hand-holding-droplet"></i> Request Reagen
           </button>
         </div>
