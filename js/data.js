@@ -22,60 +22,92 @@ const CAMPUS_INFO = {
 
 const ORGANIZATION_STRUCTURE = [
     {
+        id: "org-1",
         role: "Pelindung & Dekan",
         name: "Dr. H. Abd. Rahman, M.Pd.I",
         nip: "19750812 200212 1 003",
         unit: "Fakultas Tarbiyyah IAI YAPNAS",
-        photo: "dean"
+        photo: "dean",
+        level: 1,
+        levelName: "Pimpinan Fakultas (Puncak)",
+        order: 1
     },
     {
+        id: "org-2",
         role: "Ketua Jurusan Tadris IPA",
         name: "Nurul Mukhlisah, M.Pd.",
         nip: "19840315 201001 2 018",
         unit: "Program Studi Tadris IPA",
-        photo: "kajur"
+        photo: "kajur",
+        level: 2,
+        levelName: "Pimpinan Jurusan",
+        order: 1
     },
     {
+        id: "org-3",
         role: "Kepala Laboratorium Terpadu",
         name: "Dr. H. Muhammad Ilyas, M.Pd.",
         nip: "19800620 200801 1 009",
         unit: "Unit Pengelola Lab IPA",
-        photo: "kalab"
+        photo: "kalab",
+        level: 3,
+        levelName: "Kepala Laboratorium",
+        order: 1
     },
     {
+        id: "org-4",
         role: "Laboran / Pranata Laboratorium",
         name: "Ahmad Fadhlillah, S.Si.",
         nip: "19930418 201903 1 007",
         unit: "Pengelola Teknis & Inventaris",
-        photo: "laboran"
+        photo: "laboran",
+        level: 4,
+        levelName: "Pelaksana & Pembina (Sejajar)",
+        order: 1
     },
     {
+        id: "org-5",
         role: "Pembina Praktikum Kimia",
         name: "Siti Rahmawati, M.Si.",
         nip: "19890910 201504 2 005",
         unit: "Bidang Kimia Dasar & Analitik",
-        photo: "dosen_kimia"
+        photo: "dosen_kimia",
+        level: 4,
+        levelName: "Pelaksana & Pembina (Sejajar)",
+        order: 2
     },
     {
+        id: "org-6",
         role: "Pembina Praktikum Biologi",
         name: "Faisal Amir, M.Pd.",
         nip: "19871104 201402 1 004",
         unit: "Bidang Biologi & Mikrobiologi",
-        photo: "dosen_bio"
+        photo: "dosen_bio",
+        level: 4,
+        levelName: "Pelaksana & Pembina (Sejajar)",
+        order: 3
     },
     {
+        id: "org-7",
         role: "Pembina Praktikum Fisika",
         name: "Ilham Syarif, M.Si.",
         nip: "19910214 201801 1 006",
         unit: "Bidang Fisika Dasar & Elektronika",
-        photo: "dosen_fis"
+        photo: "dosen_fis",
+        level: 4,
+        levelName: "Pelaksana & Pembina (Sejajar)",
+        order: 4
     },
     {
+        id: "org-8",
         role: "Koordinator Asisten Praktikum",
         name: "Nurhaliza Syam (Mhs. Semester 7)",
         nip: "NIM: 2320401018",
         unit: "Himpunan Mahasiswa Tadris IPA",
-        photo: "asisten"
+        photo: "asisten",
+        level: 5,
+        levelName: "Asisten Praktikum (Tingkat Pelaksana)",
+        order: 1
     }
 ];
 

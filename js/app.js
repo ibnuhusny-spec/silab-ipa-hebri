@@ -23,7 +23,10 @@ const STATE = {
   returnPhotoBase64: null,
   editPhotoBase64: null,
   isDrawingSig: false,
-  sigHasContent: false
+  sigHasContent: false,
+  orgStructure: [],
+  orgViewMode: 'tree',
+  orgTreeZoom: 1.0
 };
 
 // Canvas Signature References
@@ -38,6 +41,7 @@ const STORAGE_KEYS = {
   MEMBERS: 'silab_yapnas_members_v2',
   ADMIN_CONFIG: 'silab_yapnas_admin_config_v2',
   LABORAN: 'silab_yapnas_laboran_v2',
+  ORG_STRUCTURE: 'silab_yapnas_org_structure_v2',
   THEME: 'silab_yapnas_theme_v2',
   ADMIN_SESSION: 'silab_yapnas_admin_session_v2'
 };
@@ -97,6 +101,7 @@ function loadData() {
   const savedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
   const savedAdminConfig = localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG);
   const savedLaboran = localStorage.getItem(STORAGE_KEYS.LABORAN);
+  const savedOrg = localStorage.getItem(STORAGE_KEYS.ORG_STRUCTURE);
 
   STATE.alat = savedAlat ? JSON.parse(savedAlat) : JSON.parse(JSON.stringify(DEFAULT_ALAT));
   STATE.fasilitas = savedFasilitas ? JSON.parse(savedFasilitas) : JSON.parse(JSON.stringify(DEFAULT_FASILITAS));
@@ -115,6 +120,8 @@ function loadData() {
     kontak: "+62 821-8899-7600"
   };
 
+  STATE.orgStructure = savedOrg ? JSON.parse(savedOrg) : (typeof ORGANIZATION_STRUCTURE !== 'undefined' ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : []);
+
   // Check admin session
   STATE.isAdminLoggedIn = sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
   updateRoleUi();
@@ -130,6 +137,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(STATE.members));
   localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(STATE.adminConfig));
   localStorage.setItem(STORAGE_KEYS.LABORAN, JSON.stringify(STATE.laboran));
+  localStorage.setItem(STORAGE_KEYS.ORG_STRUCTURE, JSON.stringify(STATE.orgStructure));
 }
 
 function resetDefaultData() {
@@ -141,6 +149,7 @@ function resetDefaultData() {
     localStorage.removeItem(STORAGE_KEYS.MEMBERS);
     localStorage.removeItem(STORAGE_KEYS.ADMIN_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.LABORAN);
+    localStorage.removeItem(STORAGE_KEYS.ORG_STRUCTURE);
     loadData();
     STATE.cart = [];
     renderAllViews();
@@ -455,31 +464,395 @@ function renderSecurityPillars() {
   `).join('');
 }
 
-function renderDashboard() {
-  // Sync laboran person in organization structure
-  if (STATE.laboran && typeof ORGANIZATION_STRUCTURE !== 'undefined') {
-    const laboranPerson = ORGANIZATION_STRUCTURE.find(p => p.role.includes("Laboran") || p.role.includes("Pranata"));
+/* ==========================================================================
+   STRUKTUR ORGANISASI LABORATORIUM (HIERARCHICAL TREE & FLEXIBLE BUILDER)
+   ========================================================================== */
+function renderOrgStructure() {
+  if (!STATE.orgStructure || STATE.orgStructure.length === 0) {
+    STATE.orgStructure = (typeof ORGANIZATION_STRUCTURE !== 'undefined') ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : [];
+  }
+
+  // Sync laboran person in organization structure if updated
+  if (STATE.laboran && STATE.orgStructure) {
+    const laboranPerson = STATE.orgStructure.find(p => p.role && (p.role.includes("Laboran") || p.role.includes("Pranata")));
     if (laboranPerson) {
       laboranPerson.name = STATE.laboran.nama;
       laboranPerson.nip = "NIP: " + STATE.laboran.nip;
     }
   }
 
-  // Org Structure
+  // 1. Render Card View (Alternative Grid)
   const orgGrid = document.getElementById('orgStructureGrid');
   if (orgGrid) {
-    orgGrid.innerHTML = ORGANIZATION_STRUCTURE.map(person => `
+    orgGrid.innerHTML = STATE.orgStructure.map(person => `
       <div class="org-card">
         <div class="org-avatar-circle">${person.name.charAt(0)}</div>
         <div class="org-details">
           <h4>${person.name}</h4>
           <div class="org-role">${person.role}</div>
-          <div class="org-meta">${person.nip}</div>
-          <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 2px;">${person.unit}</div>
+          <div class="org-meta">${person.nip || '-'}</div>
+          <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 2px;">${person.unit || ''}</div>
         </div>
       </div>
     `).join('');
   }
+
+  // 2. Render Tree View (Hierarchical with Connecting Arrows and Branching Lines)
+  const treeContainer = document.getElementById('orgTreeContent');
+  if (!treeContainer) return;
+
+  // Group persons by level
+  const levelGroups = {};
+  STATE.orgStructure.forEach(item => {
+    const lvl = parseInt(item.level, 10) || 1;
+    if (!levelGroups[lvl]) levelGroups[lvl] = [];
+    levelGroups[lvl].push(item);
+  });
+
+  // Sort levels ascending
+  const sortedLevels = Object.keys(levelGroups).map(Number).sort((a, b) => a - b);
+
+  let treeHtml = '';
+
+  sortedLevels.forEach((level, index) => {
+    const personsInLevel = levelGroups[level];
+    personsInLevel.sort((a, b) => (parseInt(a.order, 10) || 1) - (parseInt(b.order, 10) || 1));
+
+    // If not the first level, add vertical connector line and arrow from parent level
+    if (index > 0) {
+      treeHtml += `
+        <div class="org-connector-vertical-wrap">
+          <div class="org-connector-vertical-line"></div>
+          <div class="org-connector-arrow-head"><i class="fa-solid fa-chevron-down"></i></div>
+        </div>
+      `;
+
+      // If this level has more than 1 person (peers / sama rata kedudukannya),
+      // render horizontal bus bar that branches into each person!
+      if (personsInLevel.length > 1) {
+        const totalSpanPx = (personsInLevel.length - 1) * 254;
+        treeHtml += `
+          <div class="org-branch-bus-container">
+            <div class="org-branch-horizontal-bar" style="width: ${Math.min(totalSpanPx, 880)}px; max-width: 95%;"></div>
+            <div style="display: flex; justify-content: center; gap: 24px; width: 100%;">
+              ${personsInLevel.map(() => `<div class="org-branch-down-drop"></div>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Determine level badge title
+    let levelBadgeText = `Tingkat ${level}`;
+    let levelClass = `level-${level}`;
+    if (level === 1) levelBadgeText = '👑 Tingkat 1 • Pelindung & Dekanat (Puncak)';
+    else if (level === 2) levelBadgeText = '🏛️ Tingkat 2 • Pimpinan Jurusan';
+    else if (level === 3) levelBadgeText = '🔬 Tingkat 3 • Kepala Laboratorium';
+    else if (level === 4) levelBadgeText = '⚖️ Tingkat 4 • Pelaksana Teknis & Pembina Praktikum (Sejajar)';
+    else if (level === 5) levelBadgeText = '👥 Tingkat 5 • Asisten Praktikum & Anggota';
+
+    treeHtml += `
+      <div class="org-level-section" data-level="${level}">
+        <div class="org-level-badge-header">${levelBadgeText}</div>
+        <div class="org-level-cards-row">
+          ${personsInLevel.map(person => `
+            <div class="org-tree-node ${levelClass}" id="node-${person.id}">
+              <div class="org-node-level-tag">Level ${person.level}</div>
+              <div class="org-node-avatar">${person.name.charAt(0)}</div>
+              <div class="org-node-name">${person.name}</div>
+              <div class="org-node-role">${person.role}</div>
+              <div class="org-node-nip">${person.nip || '-'}</div>
+              <div class="org-node-unit">${person.unit || ''}</div>
+              
+              <div class="org-node-actions">
+                <button type="button" class="btn-node-act" onclick="editOrgPerson('${person.id}')" title="Edit Data">
+                  <i class="fa-solid fa-pen"></i> Edit
+                </button>
+                <button type="button" class="btn-node-act" onclick="moveOrgLevel('${person.id}', -1)" title="Naikkan Level (Pindahkan Lebih Ke Atas)">
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn-node-act" onclick="moveOrgLevel('${person.id}', 1)" title="Turunkan Level (Pindahkan Lebih Ke Bawah)">
+                  <i class="fa-solid fa-arrow-down"></i>
+                </button>
+                <button type="button" class="btn-node-act btn-del" onclick="deleteOrgPerson('${person.id}')" title="Hapus Jabatan">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  treeContainer.innerHTML = treeHtml;
+}
+
+function setOrgViewMode(mode) {
+  STATE.orgViewMode = mode;
+  const treeViewport = document.getElementById('orgTreeViewport');
+  const cardGrid = document.getElementById('orgStructureGrid');
+  const btnTree = document.getElementById('btnOrgTreeMode');
+  const btnCard = document.getElementById('btnOrgCardMode');
+  const zoomWrap = document.getElementById('orgZoomControlsWrap');
+
+  if (mode === 'tree') {
+    if (treeViewport) treeViewport.style.display = 'block';
+    if (cardGrid) cardGrid.style.display = 'none';
+    if (btnTree) btnTree.classList.add('active');
+    if (btnCard) btnCard.classList.remove('active');
+    if (zoomWrap) zoomWrap.style.display = 'flex';
+  } else {
+    if (treeViewport) treeViewport.style.display = 'none';
+    if (cardGrid) cardGrid.style.display = 'grid';
+    if (btnTree) btnTree.classList.remove('active');
+    if (btnCard) btnCard.classList.add('active');
+    if (zoomWrap) zoomWrap.style.display = 'none';
+  }
+}
+
+function zoomOrgTree(delta) {
+  STATE.orgTreeZoom = Math.min(Math.max((STATE.orgTreeZoom || 1.0) + delta, 0.5), 1.5);
+  applyOrgTreeZoom();
+}
+
+function resetOrgTreeZoom() {
+  STATE.orgTreeZoom = 1.0;
+  applyOrgTreeZoom();
+}
+
+function applyOrgTreeZoom() {
+  const root = document.getElementById('orgTreeContent');
+  const lbl = document.getElementById('orgZoomLabel');
+  if (root) {
+    root.style.transform = `scale(${STATE.orgTreeZoom})`;
+  }
+  if (lbl) {
+    lbl.innerText = `${Math.round(STATE.orgTreeZoom * 100)}%`;
+  }
+}
+
+function openOrgStructureManager() {
+  renderOrgStructureTable();
+  cancelOrgEditForm();
+  openModal('orgStructureModal');
+}
+
+function renderOrgStructureTable() {
+  const tbody = document.getElementById('orgStructureTableBody');
+  if (!tbody) return;
+
+  if (!STATE.orgStructure || STATE.orgStructure.length === 0) {
+    STATE.orgStructure = (typeof ORGANIZATION_STRUCTURE !== 'undefined') ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : [];
+  }
+
+  const list = [...STATE.orgStructure].sort((a, b) => {
+    if (a.level !== b.level) return a.level - b.level;
+    return (a.order || 1) - (b.order || 1);
+  });
+
+  tbody.innerHTML = list.map(item => {
+    let lvlBadge = `<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8;">Tingkat ${item.level}</span>`;
+    let statusText = `<span style="font-size: 0.76rem; color: var(--text-muted);">Bawahan</span>`;
+    if (item.level === 1) {
+      lvlBadge = `<span class="badge" style="background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4);">👑 Tingkat 1</span>`;
+      statusText = `<span style="font-size: 0.76rem; color: #fbbf24; font-weight: 600;">Paling Atas</span>`;
+    } else if (item.level === 2) {
+      lvlBadge = `<span class="badge" style="background: rgba(14,165,233,0.2); color: #38bdf8; border: 1px solid rgba(14,165,233,0.4);">🏛️ Tingkat 2</span>`;
+      statusText = `<span style="font-size: 0.76rem; color: #38bdf8;">Pimpinan Jurusan</span>`;
+    } else if (item.level === 3) {
+      lvlBadge = `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4);">🔬 Tingkat 3</span>`;
+      statusText = `<span style="font-size: 0.76rem; color: #34d399;">Kepala Lab</span>`;
+    } else if (item.level === 4) {
+      lvlBadge = `<span class="badge" style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">⚖️ Tingkat 4</span>`;
+      statusText = `<span style="font-size: 0.76rem; color: #c084fc; font-weight: 600;">Sejajar / Sama Rata</span>`;
+    } else if (item.level === 5) {
+      lvlBadge = `<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8; border: 1px solid rgba(100,116,139,0.4);">👥 Tingkat 5</span>`;
+      statusText = `<span style="font-size: 0.76rem; color: #94a3b8;">Asisten (Bawah)</span>`;
+    }
+
+    return `
+      <tr>
+        <td>${lvlBadge}</td>
+        <td><strong>${item.name}</strong></td>
+        <td><span style="color: #38bdf8; font-weight: 600;">${item.role}</span></td>
+        <td style="font-family: monospace; font-size: 0.78rem;">${item.nip || '-'}</td>
+        <td><span style="font-size: 0.78rem; color: var(--text-dim);">${item.unit || '-'}</span></td>
+        <td style="text-align: center;">
+          <div style="display: inline-flex; gap: 4px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="moveOrgLevel('${item.id}', -1)" title="Naikkan ke level lebih atas" style="padding: 2px 6px;">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="moveOrgLevel('${item.id}', 1)" title="Turunkan ke level lebih bawah" style="padding: 2px 6px;">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="editOrgPerson('${item.id}')" title="Edit Data" style="padding: 2px 6px; color: #38bdf8;">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="deleteOrgPerson('${item.id}')" title="Hapus" style="padding: 2px 6px; color: #ef4444;">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openAddOrgPersonModal() {
+  openModal('orgStructureModal');
+  const card = document.getElementById('orgEditFormCard');
+  if (card) card.style.display = 'block';
+  document.getElementById('orgFormTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Tambah Personil / Jabatan Baru';
+  document.getElementById('orgPersonId').value = '';
+  document.getElementById('orgInputNama').value = '';
+  document.getElementById('orgInputRole').value = '';
+  document.getElementById('orgInputNip').value = '';
+  document.getElementById('orgInputUnit').value = '';
+  document.getElementById('orgInputLevel').value = '4';
+  document.getElementById('orgInputOrder').value = '1';
+  updateOrgLevelHelper();
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function editOrgPerson(id) {
+  openModal('orgStructureModal');
+  const person = STATE.orgStructure.find(p => p.id === id);
+  if (!person) return;
+
+  const card = document.getElementById('orgEditFormCard');
+  if (card) card.style.display = 'block';
+  document.getElementById('orgFormTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> Edit Personil: ' + person.name;
+  document.getElementById('orgPersonId').value = person.id;
+  document.getElementById('orgInputNama').value = person.name;
+  document.getElementById('orgInputRole').value = person.role;
+  document.getElementById('orgInputNip').value = person.nip || '';
+  document.getElementById('orgInputUnit').value = person.unit || '';
+  document.getElementById('orgInputLevel').value = person.level;
+  document.getElementById('orgInputOrder').value = person.order || 1;
+  updateOrgLevelHelper();
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelOrgEditForm() {
+  const card = document.getElementById('orgEditFormCard');
+  if (card) card.style.display = 'none';
+  document.getElementById('orgPersonForm').reset();
+}
+
+function updateOrgLevelHelper() {
+  const lvl = parseInt(document.getElementById('orgInputLevel').value, 10);
+  const helper = document.getElementById('orgLevelHelperText');
+  if (!helper) return;
+
+  if (lvl === 1) {
+    helper.innerText = "👑 Paling Atas: Menempati puncak bagan sebagai Pelindung/Dekan dengan garis panah mengarah ke bawah.";
+  } else if (lvl === 2) {
+    helper.innerText = "🏛️ Tingkat Jurusan: Menempati posisi di bawah Dekan dan di atas Kepala Lab.";
+  } else if (lvl === 3) {
+    helper.innerText = "🔬 Kepala Lab: Menjadi pusat cabang instruksi yang membawahi para pembina praktikum dan laboran.";
+  } else if (lvl === 4) {
+    helper.innerText = "⚖️ Sejajar / Sama Rata: Semua personil di Tingkat 4 otomatis tersusun berdampingan secara horizontal dengan garis cabang penghubung.";
+  } else if (lvl === 5) {
+    helper.innerText = "👥 Tingkat Bawah: Menempati tingkat pelaksana teknis / asisten praktikum di bawah binaan laboran & dosen.";
+  } else {
+    helper.innerText = `Tingkat ${lvl}: Personil pada tingkat yang sama otomatis tersusun berdampingan secara horizontal.`;
+  }
+}
+
+function saveOrgPerson(event) {
+  event.preventDefault();
+  const id = document.getElementById('orgPersonId').value;
+  const nama = document.getElementById('orgInputNama').value.trim();
+  const role = document.getElementById('orgInputRole').value.trim();
+  const nip = document.getElementById('orgInputNip').value.trim();
+  const unit = document.getElementById('orgInputUnit').value.trim();
+  const level = parseInt(document.getElementById('orgInputLevel').value, 10) || 4;
+  const order = parseInt(document.getElementById('orgInputOrder').value, 10) || 1;
+
+  if (!nama || !role) {
+    showToast("Nama dan Jabatan wajib diisi!", "warning");
+    return;
+  }
+
+  if (id) {
+    // Edit existing
+    const idx = STATE.orgStructure.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      STATE.orgStructure[idx].name = nama;
+      STATE.orgStructure[idx].role = role;
+      STATE.orgStructure[idx].nip = nip;
+      STATE.orgStructure[idx].unit = unit;
+      STATE.orgStructure[idx].level = level;
+      STATE.orgStructure[idx].order = order;
+      showToast(`Data "${nama}" berhasil diperbarui.`, "success");
+    }
+  } else {
+    // Add new
+    const newId = 'org-' + Date.now();
+    STATE.orgStructure.push({
+      id: newId,
+      name: nama,
+      role: role,
+      nip: nip,
+      unit: unit,
+      level: level,
+      order: order
+    });
+    showToast(`Jabatan baru "${role}" berhasil ditambahkan.`, "success");
+  }
+
+  saveState();
+  renderOrgStructure();
+  renderOrgStructureTable();
+  cancelOrgEditForm();
+}
+
+function moveOrgLevel(id, delta) {
+  const person = STATE.orgStructure.find(p => p.id === id);
+  if (!person) return;
+
+  const currentLevel = parseInt(person.level, 10) || 1;
+  const newLevel = Math.max(1, Math.min(10, currentLevel + delta));
+
+  if (currentLevel === newLevel) return;
+
+  person.level = newLevel;
+  saveState();
+  renderOrgStructure();
+  renderOrgStructureTable();
+  showToast(`Level "${person.name}" diubah ke Tingkat ${newLevel}.`, "info");
+}
+
+function deleteOrgPerson(id) {
+  const person = STATE.orgStructure.find(p => p.id === id);
+  if (!person) return;
+
+  if (confirm(`Hapus "${person.name}" (${person.role}) dari struktur organisasi?`)) {
+    STATE.orgStructure = STATE.orgStructure.filter(p => p.id !== id);
+    saveState();
+    renderOrgStructure();
+    renderOrgStructureTable();
+    showToast(`"${person.name}" berhasil dihapus dari struktur organisasi.`, "info");
+  }
+}
+
+function resetOrgStructureToDefault() {
+  if (confirm("Kembalikan seluruh struktur organisasi ke susunan bawaan standar kampus IAI YAPNAS Jeneponto?")) {
+    STATE.orgStructure = (typeof ORGANIZATION_STRUCTURE !== 'undefined') ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : [];
+    saveState();
+    renderOrgStructure();
+    renderOrgStructureTable();
+    cancelOrgEditForm();
+    showToast("Struktur organisasi berhasil dikembalikan ke standar awal kampus.", "info");
+  }
+}
+
+function renderDashboard() {
+  // Render Org Structure (Hierarchical Tree + Alternative Cards)
+  renderOrgStructure();
+
+  // Rules Accordion
 
   // Rules Accordion
   const rulesContainer = document.getElementById('rulesContainer');

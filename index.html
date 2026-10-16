@@ -286,9 +286,57 @@
               <h2><i class="fa-solid fa-sitemap" style="color: #38bdf8;"></i> Struktur Organisasi Laboratorium</h2>
               <p>Pengelola Laboratorium Terpadu Jurusan Tadris IPA - Fakultas Tarbiyyah IAI YAPNAS Jeneponto</p>
             </div>
+            <div class="header-action-btn-wrap" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="openOrgStructureManager()" id="btnOpenOrgManagerHeader" title="Kelola susunan struktur organisasi">
+                <i class="fa-solid fa-diagram-project" style="color: #38bdf8;"></i> Kelola Bagan Organisasi
+              </button>
+            </div>
           </div>
-          <div class="org-chart-grid" id="orgStructureGrid">
-            <!-- Rendered dynamically -->
+
+          <!-- Org Tree Wrapper with Controls -->
+          <div class="org-tree-wrapper">
+            <div class="org-controls-bar">
+              <div class="org-view-modes">
+                <button type="button" class="btn-mode active" id="btnOrgTreeMode" onclick="setOrgViewMode('tree')">
+                  <i class="fa-solid fa-network-wired"></i> Bagan Pohon & Alur
+                </button>
+                <button type="button" class="btn-mode" id="btnOrgCardMode" onclick="setOrgViewMode('card')">
+                  <i class="fa-solid fa-address-card"></i> Daftar Kartu
+                </button>
+              </div>
+
+              <div class="org-zoom-controls" id="orgZoomControlsWrap">
+                <button type="button" class="btn-zoom" onclick="zoomOrgTree(-0.1)" title="Perkecil Zoom"><i class="fa-solid fa-minus"></i></button>
+                <span id="orgZoomLabel" style="font-weight: 600; min-width: 44px; text-align: center;">100%</span>
+                <button type="button" class="btn-zoom" onclick="zoomOrgTree(0.1)" title="Perbesar Zoom"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" class="btn-zoom" onclick="resetOrgTreeZoom()" title="Reset Tampilan (100%)"><i class="fa-solid fa-rotate-right"></i></button>
+              </div>
+
+              <div class="org-admin-controls-header" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openAddOrgPersonModal()">
+                  <i class="fa-solid fa-user-plus"></i> Tambah Jabatan
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openOrgStructureManager()">
+                  <i class="fa-solid fa-sliders"></i> Atur Bentuk Susunan
+                </button>
+              </div>
+            </div>
+
+            <div class="org-mobile-scroll-hint">
+              <i class="fa-solid fa-arrows-left-right"></i> Geser layar ke samping untuk melihat seluruh bagan hierarki & posisi sejajar
+            </div>
+
+            <!-- Viewport 1: Bagan Pohon Alur dengan Panah dan Garis Cabang -->
+            <div class="org-chart-tree-viewport" id="orgTreeViewport">
+              <div class="org-tree-root" id="orgTreeContent">
+                <!-- Rendered dynamically as Tree Nodes with Arrows & Branches -->
+              </div>
+            </div>
+
+            <!-- Viewport 2: Grid Kartu Alternatif -->
+            <div class="org-chart-grid" id="orgStructureGrid" style="display: none;">
+              <!-- Rendered dynamically -->
+            </div>
           </div>
 
           <!-- Tata Tertib Laboratorium -->
@@ -762,6 +810,9 @@
                     <button class="btn btn-outline btn-sm" onclick="openEditLaboranModal()" title="Ubah Nama & Data Pranata Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #10b981;">
                       <i class="fa-solid fa-user-pen"></i> Edit Nama / Profil
                     </button>
+                    <button class="btn btn-outline btn-sm" onclick="openOrgStructureManager()" title="Kelola Struktur Organisasi Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+                      <i class="fa-solid fa-sitemap"></i> Struktur Organisasi
+                    </button>
                   </div>
                   <div style="font-size: 0.82rem; color: #10b981; font-weight: 600;" id="adminDisplayJabatan">
                     Pranata Laboratorium IPA • <span id="adminDisplayNip">NIP. 19930418 201903 1 007</span>
@@ -796,6 +847,9 @@
               </button>
               <button class="admin-tab-btn" id="btnAdminTabReturns" onclick="switchAdminSubTab('admin-tab-returns')">
                 <i class="fa-solid fa-clipboard-check"></i> Validasi Pengembalian & BAP
+              </button>
+              <button class="admin-tab-btn" id="btnAdminTabOrg" onclick="openOrgStructureManager()">
+                <i class="fa-solid fa-sitemap"></i> Struktur Organisasi
               </button>
             </div>
 
@@ -1847,6 +1901,136 @@
         <div class="print-sig-space" style="height: 60px;"></div>
         <p><strong>Ahmad Fadhlillah, S.Si.</strong></p>
         <p style="font-size: 8.5pt;">NIP. 19930418 201903 1 007</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: KELOLA & EDIT STRUKTUR ORGANISASI SECARA FLEKSIBEL
+       ====================================================================== -->
+  <div class="modal-backdrop" id="orgStructureModal">
+    <div class="modal-dialog" style="max-width: 860px;">
+      <div class="modal-header">
+        <div>
+          <h3><i class="fa-solid fa-sitemap" style="color: #38bdf8;"></i> Kelola Struktur Organisasi Fleksibel</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 0;">
+            Atur hierarki pimpinan paling atas, tingkatan sejajar sama rata, dan pelaksana bawah dengan garis cabang & panah alur.
+          </p>
+        </div>
+        <button class="modal-close" onclick="closeModal('orgStructureModal')">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Header Actions inside Modal -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAddOrgPersonModal()">
+              <i class="fa-solid fa-user-plus"></i> Tambah Personil / Jabatan Baru
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="resetOrgStructureToDefault()">
+              <i class="fa-solid fa-rotate-left"></i> Reset ke Default Kampus
+            </button>
+          </div>
+          <span style="font-size: 0.78rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 4px 10px; border-radius: 6px;">
+            <i class="fa-solid fa-circle-info"></i> Tingkat/Level yang sama otomatis disusun sejajar sama rata
+          </span>
+        </div>
+
+        <!-- Org Members Table / List with Level Up/Down & Order Actions -->
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 10px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Tingkatan (Level)</th>
+                <th>Nama Lengkap & Gelar</th>
+                <th>Jabatan Struktural</th>
+                <th>NIP / NIM</th>
+                <th>Unit Kerja</th>
+                <th style="text-align: center; width: 200px;">Atur Posisi & Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="orgStructureTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Form Inline / Form Section: Tambah / Edit Personil -->
+        <div class="org-form-card" id="orgEditFormCard" style="display: none; margin-top: 20px; background: rgba(14, 23, 38, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 14px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 id="orgFormTitle" style="font-size: 0.98rem; font-weight: 700; color: #38bdf8; margin: 0;">
+              <i class="fa-solid fa-user-pen"></i> Form Tambah / Edit Personil Organisasi
+            </h4>
+            <button type="button" class="btn btn-outline btn-sm" onclick="cancelOrgEditForm()" style="padding: 2px 8px; font-size: 0.75rem;">
+              <i class="fa-solid fa-xmark"></i> Batal
+            </button>
+          </div>
+          <form id="orgPersonForm" onsubmit="saveOrgPerson(event)">
+            <input type="hidden" id="orgPersonId">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="orgInputNama">Nama Lengkap & Gelar <span class="req">*</span></label>
+                <input type="text" id="orgInputNama" class="form-control" placeholder="Contoh: Siti Rahmawati, M.Si." required>
+              </div>
+              <div class="form-group">
+                <label for="orgInputRole">Jabatan Struktural <span class="req">*</span></label>
+                <input type="text" id="orgInputRole" class="form-control" placeholder="Contoh: Pembina Praktikum Kimia" required>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="orgInputNip">NIP / NUPTK / NIM</label>
+                <input type="text" id="orgInputNip" class="form-control" placeholder="Contoh: 19890910 201504 2 005">
+              </div>
+              <div class="form-group">
+                <label for="orgInputUnit">Unit Kerja / Bidang</label>
+                <input type="text" id="orgInputUnit" class="form-control" placeholder="Contoh: Bidang Kimia Dasar & Analitik">
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="orgInputLevel">Tingkat Kedudukan (Level Hierarki) <span class="req">*</span></label>
+                <select id="orgInputLevel" class="form-control" required onchange="updateOrgLevelHelper()">
+                  <option value="1">👑 Tingkat 1: Paling Atas (Pelindung & Dekanat)</option>
+                  <option value="2">🏛️ Tingkat 2: Pimpinan Jurusan (Kajur / Sekjur)</option>
+                  <option value="3">🔬 Tingkat 3: Kepala Laboratorium Terpadu</option>
+                  <option value="4" selected>⚖️ Tingkat 4: Sejajar / Sama Rata (Laboran & Dosen Pembina Bidang)</option>
+                  <option value="5">👥 Tingkat 5: Bagian Bawah (Koordinator Asisten & Anggota)</option>
+                  <option value="6">Tingkat 6: Tim Pelaksana Tambahan</option>
+                </select>
+                <small id="orgLevelHelperText" style="display: block; font-size: 0.75rem; color: #38bdf8; margin-top: 5px;">
+                  Semua personil di Tingkat 4 akan otomatis disusun sejajar/sama rata berdampingan secara horizontal dengan garis cabang.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="orgInputOrder">Urutan Posisi Berdampingan (Order)</label>
+                <input type="number" id="orgInputOrder" class="form-control" min="1" max="50" value="1" placeholder="Urutan 1, 2, 3, dst">
+                <small style="font-size: 0.75rem; color: var(--text-dim); margin-top: 5px; display: block;">
+                  Urutan kotak dari kiri ke kanan jika berada pada level yang sama rata.
+                </small>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="cancelOrgEditForm()">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Personil
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          <i class="fa-solid fa-check-double" style="color: #10b981;"></i> Perubahan langsung otomatis diperbarui pada bagan alur di halaman utama.
+        </span>
+        <button type="button" class="btn btn-primary" onclick="closeModal('orgStructureModal')">
+          <i class="fa-solid fa-check"></i> Selesai
+        </button>
       </div>
     </div>
   </div>
