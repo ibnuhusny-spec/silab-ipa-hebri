@@ -228,6 +228,7 @@ function switchTab(tabId) {
     'tab-alat': 'Katalog Alat Laboratorium',
     'tab-fasilitas': 'Fasilitas Umum Laboratorium',
     'tab-bahan': 'Data Bahan Kimia & Reagen',
+    'tab-members': 'Data Mahasiswa & Dosen Tadris IPA',
     'tab-peminjaman': 'Formulir Peminjaman Inventaris',
     'tab-lacak': 'Lacak Tiket & Pengembalian',
     'tab-admin': 'Dashboard Khusus Pengelola Lab (Laboran)'
@@ -267,6 +268,22 @@ function handleAdminLogin(event) {
     sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'true');
     closeModal('adminLoginModal');
     updateRoleUi();
+
+    // Check if there was a pending admin action (e.g. from tab-members)
+    if (STATE.pendingAdminAction) {
+      const pending = STATE.pendingAdminAction;
+      STATE.pendingAdminAction = null;
+      if (pending.action === 'add_member') {
+        openAddMemberModal();
+        showToast("Login Admin Berhasil! Silakan input data civitas.", "success");
+        return;
+      } else if (pending.action === 'edit_member') {
+        openEditMemberModal(pending.id);
+        showToast("Login Admin Berhasil! Silakan edit data civitas.", "success");
+        return;
+      }
+    }
+
     switchTab('tab-admin');
     showToast(`Autentikasi Pengelola Berhasil! Selamat datang di Portal Manajemen Lab IPA.`, "success");
     renderAdminViews();
@@ -1036,27 +1053,89 @@ function resetMemberQuickSelect() {
   showToast("Isian data peminjam dibersihkan.", "info");
 }
 
-function filterMemberRole(role, btn) {
-  STATE.activeMemberFilter = role;
-  document.querySelectorAll('#memberRoleFilterGroup button').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderMembersTable();
+/* ==========================================================================
+   DATA MAHASISWA & DOSEN (CIVITAS TADRIS IPA) CONTROLLER
+   ========================================================================== */
+function getMemberAvatarUrl(m) {
+  if (m.foto && m.foto.trim()) {
+    return m.foto.trim();
+  }
+  const isDosen = m.peran === 'Dosen';
+  const bg = isDosen ? '0369a1' : '064e3b';
+  const color = isDosen ? '38bdf8' : '34d399';
+  const encodedName = encodeURIComponent(m.nama || 'Civitas');
+  return `https://ui-avatars.com/api/?name=${encodedName}&background=${bg}&color=${color}&bold=true&size=160`;
 }
 
-function renderMembersTable() {
-  const tbody = document.getElementById('membersTableBody');
-  if (!tbody) return;
+function setMembersViewFilter(role, btn) {
+  STATE.activeMemberFilter = role;
+  document.querySelectorAll('#tabMemberRoleFilters button, #memberRoleFilterGroup button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMembersView();
+}
 
-  const keyword = (document.getElementById('memberSearchInput')?.value || '').toLowerCase().trim();
+function filterMemberRole(role, btn) {
+  setMembersViewFilter(role, btn);
+}
+
+function switchMemberViewMode(mode) {
+  STATE.memberViewMode = mode;
+  const cardsGrid = document.getElementById('tabMembersCardsGrid');
+  const tableWrap = document.getElementById('tabMembersTableWrapper');
+  const btnCards = document.getElementById('btnViewModeCards');
+  const btnTable = document.getElementById('btnViewModeTable');
+
+  if (mode === 'table') {
+    if (cardsGrid) cardsGrid.style.display = 'none';
+    if (tableWrap) tableWrap.style.display = 'block';
+    if (btnCards) btnCards.classList.remove('active');
+    if (btnTable) btnTable.classList.add('active');
+  } else {
+    if (cardsGrid) cardsGrid.style.display = 'grid';
+    if (tableWrap) tableWrap.style.display = 'none';
+    if (btnCards) btnCards.classList.add('active');
+    if (btnTable) btnTable.classList.remove('active');
+  }
+}
+
+function renderMembersView() {
+  const cardsGrid = document.getElementById('tabMembersCardsGrid');
+  const tableBody = document.getElementById('tabMembersTableBody');
+  const adminTableBody = document.getElementById('membersTableBody');
+
+  const tabSearch = document.getElementById('tabMemberSearchInput')?.value || '';
+  const adminSearch = document.getElementById('memberSearchInput')?.value || '';
+  const keyword = (tabSearch || adminSearch || '').toLowerCase().trim();
   const roleFilter = STATE.activeMemberFilter || 'ALL';
 
   const mhsCount = STATE.members.filter(m => m.peran === 'Mahasiswa').length;
   const dosenCount = STATE.members.filter(m => m.peran === 'Dosen').length;
+  const totalCount = STATE.members.length;
+
+  // Update counters across all tabs
+  const elTotal = document.getElementById('bannerMemberTotal');
+  const elBannerMhs = document.getElementById('bannerMemberMhs');
+  const elBannerDosen = document.getElementById('bannerMemberDosen');
+  const elSidebar = document.getElementById('sidebarMembersCount');
+
+  const elTabAll = document.getElementById('tabCountAll');
+  const elTabMhs = document.getElementById('tabCountMhs');
+  const elTabDosen = document.getElementById('tabCountDosen');
 
   const elAll = document.getElementById('memberCountAll');
   const elMhs = document.getElementById('memberCountMhs');
   const elDosen = document.getElementById('memberCountDosen');
-  if (elAll) elAll.textContent = STATE.members.length;
+
+  if (elTotal) elTotal.textContent = totalCount;
+  if (elBannerMhs) elBannerMhs.textContent = mhsCount;
+  if (elBannerDosen) elBannerDosen.textContent = dosenCount;
+  if (elSidebar) elSidebar.textContent = totalCount;
+
+  if (elTabAll) elTabAll.textContent = totalCount;
+  if (elTabMhs) elTabMhs.textContent = mhsCount;
+  if (elTabDosen) elTabDosen.textContent = dosenCount;
+
+  if (elAll) elAll.textContent = totalCount;
   if (elMhs) elMhs.textContent = mhsCount;
   if (elDosen) elDosen.textContent = dosenCount;
 
@@ -1066,64 +1145,398 @@ function renderMembersTable() {
                      (m.nomorInduk || '').toLowerCase().includes(keyword) ||
                      (m.telepon || '').toLowerCase().includes(keyword) ||
                      (m.email || '').toLowerCase().includes(keyword) ||
-                     (m.statusSemester || '').toLowerCase().includes(keyword);
+                     (m.statusSemester || '').toLowerCase().includes(keyword) ||
+                     (m.jurusan || '').toLowerCase().includes(keyword);
     return matchRole && matchKey;
   });
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">Tidak ada data civitas yang cocok.</td></tr>`;
-    return;
+  // Render Cards Grid (in #tab-members)
+  if (cardsGrid) {
+    if (filtered.length === 0) {
+      cardsGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; background: var(--bg-card); border-radius: var(--radius-xl); border: 1px dashed var(--border-subtle);">
+          <i class="fa-solid fa-users-slash" style="font-size: 2.8rem; color: var(--text-dim); margin-bottom: 12px; display: inline-block;"></i>
+          <h4 style="color: var(--text-main); margin-bottom: 6px;">Tidak ada data civitas yang cocok</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Coba sesuaikan kata kunci pencarian atau filter peran Dosen / Mahasiswa.</p>
+        </div>
+      `;
+    } else {
+      cardsGrid.innerHTML = filtered.map(m => {
+        const isDosen = m.peran === 'Dosen';
+        const avatarUrl = getMemberAvatarUrl(m);
+        const cardClass = isDosen ? 'member-card is-dosen' : 'member-card is-mhs';
+        const badgeClass = isDosen ? 'badge-role-dosen' : 'badge-role-mhs';
+        const roleIcon = isDosen ? 'fa-chalkboard-user' : 'fa-user-graduate';
+        const indukLabel = isDosen ? 'NIDN' : 'NIM';
+
+        return `
+          <div class="${cardClass}">
+            <div>
+              <div class="member-card-header">
+                <img src="${avatarUrl}" alt="${m.nama}" class="member-card-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(m.nama)}&background=1e293b&color=38bdf8'">
+                <div class="member-card-info">
+                  <div class="member-card-badge-row">
+                    <span class="${badgeClass}">
+                      <i class="fa-solid ${roleIcon}"></i> ${m.peran}
+                    </span>
+                  </div>
+                  <h3 class="member-card-name" title="${m.nama}">${m.nama}</h3>
+                  <div class="member-card-id-pill" onclick="copyToClipboard('${m.nomorInduk}', '${indukLabel}')" title="Klik untuk menyalin ${indukLabel}" style="cursor: pointer;">
+                    <i class="fa-solid fa-id-card"></i> ${indukLabel}: ${m.nomorInduk}
+                    <i class="fa-regular fa-copy" style="font-size: 0.7rem; opacity: 0.7;"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="member-card-body">
+                <div class="member-meta-row">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                  <span>${m.statusSemester || '-'} • ${m.jurusan || 'Tadris IPA'}</span>
+                </div>
+                <div class="member-meta-row">
+                  <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i>
+                  ${m.telepon ? `<a href="https://wa.me/${m.telepon.replace(/\D/g, '')}" target="_blank" style="color: #25d366; text-decoration: none; font-weight: 600;">${m.telepon}</a>` : '<span style="color: var(--text-dim);">-</span>'}
+                </div>
+                <div class="member-meta-row">
+                  <i class="fa-regular fa-envelope"></i>
+                  <span style="font-size: 0.78rem; word-break: break-all;">${m.email || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="member-card-footer">
+              <button type="button" class="btn-direct-loan" onclick="directLoanForMember('${m.id}')" title="Buat Pinjaman Baru untuk ${m.nama}">
+                <i class="fa-solid fa-cart-plus"></i> Pinjamkan Alat
+              </button>
+              <div class="member-admin-actions">
+                <button type="button" class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data Civitas">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-xs" onclick="triggerDeleteMemberFlow('${m.id}')" title="Hapus dari Database">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
   }
 
-  tbody.innerHTML = filtered.map((m, idx) => {
-    const isDosen = m.peran === 'Dosen';
-    return `
-      <tr>
-        <td style="color: var(--text-dim); font-size: 0.8rem;">${idx + 1}</td>
-        <td>
-          <span class="${isDosen ? 'badge-role-dosen' : 'badge-role-mhs'}">
-            <i class="fa-solid ${isDosen ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
-            ${m.peran}
-          </span>
-        </td>
-        <td><strong>${m.nama}</strong></td>
-        <td style="font-family: var(--font-mono); font-weight: 600; color: #10b981;">${m.nomorInduk}</td>
-        <td>${m.statusSemester || '-'}</td>
-        <td>
-          ${m.telepon ? `<a href="https://wa.me/${m.telepon.replace(/\D/g, '')}" target="_blank" style="color: #25d366; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> ${m.telepon}</a>` : '-'}
-        </td>
-        <td><small style="color: var(--text-dim);">${m.email || '-'}</small></td>
-        <td style="text-align: center;">
-          <div style="display: flex; gap: 4px; justify-content: center;">
-            <button class="btn btn-secondary btn-sm" onclick="openEditMemberModal('${m.id}')" title="Edit Data Civitas">
-              <i class="fa-solid fa-pen-to-square"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')" title="Hapus">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  // Render Table View (in #tab-members)
+  if (tableBody) {
+    if (filtered.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 28px; color: var(--text-dim);">Tidak ada data civitas yang cocok.</td></tr>`;
+    } else {
+      tableBody.innerHTML = filtered.map((m, idx) => {
+        const isDosen = m.peran === 'Dosen';
+        const avatarUrl = getMemberAvatarUrl(m);
+        return `
+          <tr>
+            <td style="color: var(--text-dim); font-size: 0.8rem;">${idx + 1}</td>
+            <td style="width: 50px;">
+              <img src="${avatarUrl}" alt="${m.nama}" style="width: 38px; height: 38px; border-radius: 99px; object-fit: cover; border: 1.5px solid ${isDosen ? '#38bdf8' : '#10b981'};" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(m.nama)}&background=1e293b&color=38bdf8'">
+            </td>
+            <td>
+              <span class="${isDosen ? 'badge-role-dosen' : 'badge-role-mhs'}">
+                <i class="fa-solid ${isDosen ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
+                ${m.peran}
+              </span>
+            </td>
+            <td><strong>${m.nama}</strong></td>
+            <td style="font-family: var(--font-mono); font-weight: 600; color: ${isDosen ? '#38bdf8' : '#10b981'};">${m.nomorInduk}</td>
+            <td>${m.statusSemester || '-'} <small style="color: var(--text-dim);">(${m.jurusan || 'Tadris IPA'})</small></td>
+            <td>
+              ${m.telepon ? `<a href="https://wa.me/${m.telepon.replace(/\D/g, '')}" target="_blank" style="color: #25d366; text-decoration: none; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> ${m.telepon}</a>` : '-'}
+            </td>
+            <td><small style="color: var(--text-dim);">${m.email || '-'}</small></td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 4px; justify-content: center;">
+                <button class="btn btn-primary btn-xs" onclick="directLoanForMember('${m.id}')" title="Pinjamkan Alat">
+                  <i class="fa-solid fa-cart-plus"></i>
+                </button>
+                <button class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-danger btn-xs" onclick="triggerDeleteMemberFlow('${m.id}')" title="Hapus">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // Render Admin View table (in #tab-admin sub-tab)
+  if (adminTableBody) {
+    if (filtered.length === 0) {
+      adminTableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">Tidak ada data civitas yang cocok.</td></tr>`;
+    } else {
+      adminTableBody.innerHTML = filtered.map((m, idx) => {
+        const isDosen = m.peran === 'Dosen';
+        const avatarUrl = getMemberAvatarUrl(m);
+        return `
+          <tr>
+            <td style="color: var(--text-dim); font-size: 0.8rem;">${idx + 1}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${avatarUrl}" alt="${m.nama}" style="width: 32px; height: 32px; border-radius: 99px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(m.nama)}&background=1e293b&color=fff'">
+                <span class="${isDosen ? 'badge-role-dosen' : 'badge-role-mhs'}">
+                  <i class="fa-solid ${isDosen ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
+                  ${m.peran}
+                </span>
+              </div>
+            </td>
+            <td><strong>${m.nama}</strong></td>
+            <td style="font-family: var(--font-mono); font-weight: 600; color: ${isDosen ? '#38bdf8' : '#10b981'};">${m.nomorInduk}</td>
+            <td>${m.statusSemester || '-'}</td>
+            <td>
+              ${m.telepon ? `<a href="https://wa.me/${m.telepon.replace(/\D/g, '')}" target="_blank" style="color: #25d366; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> ${m.telepon}</a>` : '-'}
+            </td>
+            <td><small style="color: var(--text-dim);">${m.email || '-'}</small></td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 4px; justify-content: center;">
+                <button class="btn btn-secondary btn-sm" onclick="openEditMemberModal('${m.id}')" title="Edit Data Civitas">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')" title="Hapus">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
 }
 
-function openAddMemberModal() {
-  document.getElementById('newMemberForm')?.reset();
-  document.getElementById('addMemberModal')?.classList.add('active');
+// Alias for backwards compatibility
+function renderMembersTable() {
+  renderMembersView();
 }
 
-function toggleMemberRoleFields() {
-  const role = document.getElementById('memberPeran')?.value;
+/* --------------------------------------------------------------------------
+   ROLE SELECTION & FORM TOGGLES (DOSEN vs MAHASISWA)
+   -------------------------------------------------------------------------- */
+function setAddMemberRole(role) {
+  const hiddenInput = document.getElementById('memberPeran');
+  const btnMhs = document.getElementById('addRoleToggleMhs');
+  const btnDosen = document.getElementById('addRoleToggleDosen');
   const labelInduk = document.getElementById('labelMemberNomorInduk');
+  const inputInduk = document.getElementById('memberNomorInduk');
   const labelSem = document.getElementById('labelMemberSemester');
+  const inputSem = document.getElementById('memberSemester');
+
+  if (hiddenInput) hiddenInput.value = role;
+
   if (role === 'Dosen') {
-    if (labelInduk) labelInduk.innerHTML = 'NIDN / NIP <span class="req">*</span>';
+    if (btnMhs) btnMhs.classList.remove('active');
+    if (btnDosen) btnDosen.classList.add('active');
+    if (labelInduk) labelInduk.innerHTML = 'NIDN / NIP Dosen <span class="req">*</span>';
+    if (inputInduk) inputInduk.placeholder = 'Contoh: 0920068001 / 1980...';
+    if (labelSem) labelSem.innerHTML = 'Jabatan / Mata Kuliah Diampu <span class="req">*</span>';
+    if (inputSem) inputSem.placeholder = 'Contoh: Dosen Pengampu Kimia Dasar / Kaprodi';
+  } else {
+    if (btnMhs) btnMhs.classList.add('active');
+    if (btnDosen) btnDosen.classList.remove('active');
+    if (labelInduk) labelInduk.innerHTML = 'NIM (Nomor Induk Mahasiswa) <span class="req">*</span>';
+    if (inputInduk) inputInduk.placeholder = 'Contoh: 2320401005';
+    if (labelSem) labelSem.innerHTML = 'Semester <span class="req">*</span>';
+    if (inputSem) inputSem.placeholder = 'Contoh: Semester 5';
+  }
+
+  // Update photo placeholder if user hasn't uploaded custom photo
+  if (!STATE.tempAddMemberPhoto && !document.getElementById('memberFotoUrl')?.value) {
+    const preview = document.getElementById('addMemberPhotoPreview');
+    if (preview) {
+      const bg = role === 'Dosen' ? '0369a1' : '064e3b';
+      const color = role === 'Dosen' ? '38bdf8' : '34d399';
+      preview.src = `https://ui-avatars.com/api/?name=${role === 'Dosen' ? 'Dosen+Baru' : 'Mahasiswa+Baru'}&background=${bg}&color=${color}&bold=true&size=160`;
+    }
+  }
+}
+
+function setEditMemberRole(role) {
+  const hiddenInput = document.getElementById('editMemberPeran');
+  const btnMhs = document.getElementById('editRoleToggleMhs');
+  const btnDosen = document.getElementById('editRoleToggleDosen');
+  const labelInduk = document.getElementById('labelEditMemberNomorInduk');
+  const labelSem = document.getElementById('labelEditMemberSemester');
+
+  if (hiddenInput) hiddenInput.value = role;
+
+  if (role === 'Dosen') {
+    if (btnMhs) btnMhs.classList.remove('active');
+    if (btnDosen) btnDosen.classList.add('active');
+    if (labelInduk) labelInduk.innerHTML = 'NIDN / NIP Dosen <span class="req">*</span>';
     if (labelSem) labelSem.innerHTML = 'Jabatan / Keahlian <span class="req">*</span>';
   } else {
+    if (btnMhs) btnMhs.classList.add('active');
+    if (btnDosen) btnDosen.classList.remove('active');
     if (labelInduk) labelInduk.innerHTML = 'NIM (Nomor Induk Mahasiswa) <span class="req">*</span>';
     if (labelSem) labelSem.innerHTML = 'Semester <span class="req">*</span>';
   }
+}
+
+function toggleMemberRoleFields() {
+  const role = document.getElementById('memberPeran')?.value || 'Mahasiswa';
+  setAddMemberRole(role);
+}
+
+/* --------------------------------------------------------------------------
+   PHOTO UPLOAD & SUPABASE STORAGE URL HANDLERS
+   -------------------------------------------------------------------------- */
+function previewAddMemberPhoto(url) {
+  const preview = document.getElementById('addMemberPhotoPreview');
+  if (!preview) return;
+  STATE.tempAddMemberPhoto = url ? url.trim() : null;
+  if (url && url.trim()) {
+    preview.src = url.trim();
+  } else {
+    const role = document.getElementById('memberPeran')?.value || 'Mahasiswa';
+    const bg = role === 'Dosen' ? '0369a1' : '064e3b';
+    const color = role === 'Dosen' ? '38bdf8' : '34d399';
+    preview.src = `https://ui-avatars.com/api/?name=Civitas&background=${bg}&color=${color}&bold=true&size=160`;
+  }
+}
+
+function handleAddMemberPhotoFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    STATE.tempAddMemberPhoto = e.target.result;
+    const preview = document.getElementById('addMemberPhotoPreview');
+    if (preview) preview.src = e.target.result;
+    showToast("Foto berhasil dimuat dari perangkat.", "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetAddMemberPhoto() {
+  STATE.tempAddMemberPhoto = null;
+  const urlInput = document.getElementById('memberFotoUrl');
+  const fileInput = document.getElementById('memberFotoFileInput');
+  if (urlInput) urlInput.value = '';
+  if (fileInput) fileInput.value = '';
+  const role = document.getElementById('memberPeran')?.value || 'Mahasiswa';
+  const preview = document.getElementById('addMemberPhotoPreview');
+  if (preview) {
+    const bg = role === 'Dosen' ? '0369a1' : '064e3b';
+    const color = role === 'Dosen' ? '38bdf8' : '34d399';
+    preview.src = `https://ui-avatars.com/api/?name=Civitas&background=${bg}&color=${color}&bold=true&size=160`;
+  }
+  showToast("Foto dikembalikan ke avatar bawaan.", "info");
+}
+
+function previewEditMemberPhoto(url) {
+  const preview = document.getElementById('editMemberPhotoPreview');
+  if (!preview) return;
+  STATE.tempEditMemberPhoto = url ? url.trim() : null;
+  if (url && url.trim()) {
+    preview.src = url.trim();
+  }
+}
+
+function handleEditMemberPhotoFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    STATE.tempEditMemberPhoto = e.target.result;
+    const preview = document.getElementById('editMemberPhotoPreview');
+    if (preview) preview.src = e.target.result;
+    showToast("Foto baru berhasil dimuat dari perangkat.", "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetEditMemberPhoto() {
+  STATE.tempEditMemberPhoto = '';
+  const urlInput = document.getElementById('editMemberFotoUrl');
+  const fileInput = document.getElementById('editMemberFotoFileInput');
+  if (urlInput) urlInput.value = '';
+  if (fileInput) fileInput.value = '';
+  const nama = document.getElementById('editMemberNama')?.value || 'Civitas';
+  const preview = document.getElementById('editMemberPhotoPreview');
+  if (preview) {
+    preview.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nama)}&background=1e293b&color=38bdf8&bold=true&size=160`;
+  }
+  showToast("Foto dikembalikan ke avatar awal.", "info");
+}
+
+function handleMemberNamaChange(nama, mode) {
+  if (mode === 'add' && !STATE.tempAddMemberPhoto && !document.getElementById('memberFotoUrl')?.value) {
+    const preview = document.getElementById('addMemberPhotoPreview');
+    if (preview) {
+      const role = document.getElementById('memberPeran')?.value || 'Mahasiswa';
+      const bg = role === 'Dosen' ? '0369a1' : '064e3b';
+      const color = role === 'Dosen' ? '38bdf8' : '34d399';
+      preview.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nama || 'Civitas')}&background=${bg}&color=${color}&bold=true&size=160`;
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   ADMIN FLOW SECURITY GATES
+   -------------------------------------------------------------------------- */
+function triggerAddMemberFlow() {
+  if (STATE.isAdminLoggedIn) {
+    openAddMemberModal();
+  } else {
+    STATE.pendingAdminAction = { action: 'add_member' };
+    showToast("Aksi penginputan data membutuhkan autentikasi Admin Laboran.", "info");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    document.getElementById('adminLoginModal')?.classList.add('active');
+  }
+}
+
+function triggerEditMemberFlow(memberId) {
+  if (STATE.isAdminLoggedIn) {
+    openEditMemberModal(memberId);
+  } else {
+    STATE.pendingAdminAction = { action: 'edit_member', id: memberId };
+    showToast("Aksi edit data civitas membutuhkan autentikasi Admin Laboran.", "info");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    document.getElementById('adminLoginModal')?.classList.add('active');
+  }
+}
+
+function triggerDeleteMemberFlow(memberId) {
+  if (STATE.isAdminLoggedIn) {
+    deleteMember(memberId);
+  } else {
+    STATE.pendingAdminAction = { action: 'delete_member', id: memberId };
+    showToast("Aksi penghapusan data membutuhkan autentikasi Admin Laboran.", "warning");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    document.getElementById('adminLoginModal')?.classList.add('active');
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CRUD MODAL ACTIONS
+   -------------------------------------------------------------------------- */
+function openAddMemberModal() {
+  document.getElementById('newMemberForm')?.reset();
+  STATE.tempAddMemberPhoto = null;
+  setAddMemberRole('Mahasiswa');
+  const urlInput = document.getElementById('memberFotoUrl');
+  if (urlInput) urlInput.value = '';
+  document.getElementById('addMemberModal')?.classList.add('active');
 }
 
 function saveNewMember(event) {
@@ -1135,12 +1548,16 @@ function saveNewMember(event) {
   const statusSemester = document.getElementById('memberSemester').value.trim();
   const telepon = document.getElementById('memberTelepon').value.trim();
   const email = document.getElementById('memberEmail').value.trim();
+  const fotoUrlInput = document.getElementById('memberFotoUrl')?.value.trim() || '';
 
   // Check duplicate NIM/NIDN
   if (STATE.members.some(m => m.nomorInduk === nomorInduk)) {
     showToast(`NIM/NIDN "${nomorInduk}" sudah terdaftar di database!`, "error");
     return;
   }
+
+  // Determine photo: uploaded file > Supabase/web URL > fallback avatar
+  const foto = STATE.tempAddMemberPhoto || fotoUrlInput || '';
 
   const prefix = peran === 'Dosen' ? 'MBR-D' : 'MBR-M';
   const newMember = {
@@ -1151,23 +1568,26 @@ function saveNewMember(event) {
     jurusan,
     statusSemester,
     telepon,
-    email
+    email,
+    foto
   };
 
   STATE.members.unshift(newMember);
   saveState();
+  STATE.tempAddMemberPhoto = null;
   closeModal('addMemberModal');
   populateMemberQuickSelect();
-  renderMembersTable();
-  showToast(`Civitas "${nama}" berhasil didaftarkan ke database lab.`, "success");
+  renderMembersView();
+  showToast(`Civitas "${nama}" (${peran}) berhasil didaftarkan ke database lab.`, "success");
 }
 
 function openEditMemberModal(memberId) {
   const member = STATE.members.find(m => m.id === memberId);
   if (!member) return;
 
+  STATE.tempEditMemberPhoto = member.foto || '';
+
   document.getElementById('editMemberId').value = member.id;
-  document.getElementById('editMemberPeran').value = member.peran;
   document.getElementById('editMemberNama').value = member.nama;
   document.getElementById('editMemberNomorInduk').value = member.nomorInduk;
   document.getElementById('editMemberJurusan').value = member.jurusan || 'Tadris IPA';
@@ -1175,6 +1595,13 @@ function openEditMemberModal(memberId) {
   document.getElementById('editMemberTelepon').value = member.telepon || '';
   document.getElementById('editMemberEmail').value = member.email || '';
 
+  const urlInput = document.getElementById('editMemberFotoUrl');
+  if (urlInput) urlInput.value = (member.foto && member.foto.startsWith('http')) ? member.foto : '';
+
+  const preview = document.getElementById('editMemberPhotoPreview');
+  if (preview) preview.src = getMemberAvatarUrl(member);
+
+  setEditMemberRole(member.peran || 'Mahasiswa');
   document.getElementById('editMemberModal')?.classList.add('active');
 }
 
@@ -1184,6 +1611,8 @@ function saveEditedMember(event) {
   const member = STATE.members.find(m => m.id === id);
   if (!member) return;
 
+  const urlInput = document.getElementById('editMemberFotoUrl')?.value.trim() || '';
+
   member.peran = document.getElementById('editMemberPeran').value;
   member.nama = document.getElementById('editMemberNama').value.trim();
   member.nomorInduk = document.getElementById('editMemberNomorInduk').value.trim();
@@ -1192,10 +1621,17 @@ function saveEditedMember(event) {
   member.telepon = document.getElementById('editMemberTelepon').value.trim();
   member.email = document.getElementById('editMemberEmail').value.trim();
 
+  if (STATE.tempEditMemberPhoto) {
+    member.foto = STATE.tempEditMemberPhoto;
+  } else if (urlInput) {
+    member.foto = urlInput;
+  }
+
   saveState();
+  STATE.tempEditMemberPhoto = null;
   closeModal('editMemberModal');
   populateMemberQuickSelect();
-  renderMembersTable();
+  renderMembersView();
   showToast(`Data "${member.nama}" berhasil diperbarui.`, "success");
 }
 
@@ -1207,9 +1643,50 @@ function deleteMember(memberId) {
     STATE.members = STATE.members.filter(m => m.id !== memberId);
     saveState();
     populateMemberQuickSelect();
-    renderMembersTable();
+    renderMembersView();
     showToast(`Data "${member.nama}" telah dihapus.`, "info");
   }
+}
+
+/* --------------------------------------------------------------------------
+   DIRECT LOAN SHORTCUT & UTILITIES
+   -------------------------------------------------------------------------- */
+function directLoanForMember(memberId) {
+  const member = STATE.members.find(m => m.id === memberId);
+  if (!member) return;
+
+  // Set quick select dropdown
+  const quickSelect = document.getElementById('memberQuickSelect');
+  if (quickSelect) quickSelect.value = memberId;
+
+  // Fill loan form fields
+  handleMemberSelectChange(memberId);
+
+  // Switch to loan tab
+  switchTab('tab-peminjaman');
+  showToast(`Data "${member.nama}" (${member.nomorInduk}) siap digunakan pada formulir peminjaman.`, "success");
+}
+
+function copyToClipboard(text, label) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`${label || 'Teks'} "${text}" berhasil disalin ke clipboard.`, "info");
+    }).catch(() => {
+      fallbackCopy(text, label);
+    });
+  } else {
+    fallbackCopy(text, label);
+  }
+}
+
+function fallbackCopy(text, label) {
+  const tempInput = document.createElement("input");
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  showToast(`${label || 'Teks'} "${text}" berhasil disalin ke clipboard.`, "info");
 }
 
 // Download Excel Template for Members
@@ -2346,6 +2823,27 @@ function toggleAddInventoryFields() {
   }
 }
 
+function handleAddInvPhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    STATE.tempAddInvPhoto = e.target.result;
+    const preview = document.getElementById('addInvPreviewImg');
+    if (preview) preview.src = e.target.result;
+    showToast("Foto alat berhasil dimuat.", "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleAddInvImageUrlInput(url) {
+  const preview = document.getElementById('addInvPreviewImg');
+  if (preview && url && url.trim()) {
+    preview.src = url.trim();
+  }
+}
+
 function saveNewInventoryItem(event) {
   event.preventDefault();
 
@@ -2354,6 +2852,8 @@ function saveNewInventoryItem(event) {
   const nama = document.getElementById('invNama').value.trim();
   const stok = parseInt(document.getElementById('invStok').value) || 1;
   const lokasi = document.getElementById('invLokasi').value.trim() || 'Lab Terpadu';
+  const urlGambar = document.getElementById('addInvImageUrl')?.value.trim() || '';
+  const gambar = STATE.tempAddInvPhoto || urlGambar || 'assets/glassware.jpg';
 
   if (type === 'ALAT') {
     const merk = document.getElementById('invMerk').value.trim() || '-';
@@ -2374,12 +2874,44 @@ function saveNewInventoryItem(event) {
       status: "Tersedia",
       lokasi,
       deskripsi: "Item baru ditambahkan oleh Laboran.",
-      gambar: "assets/glassware.jpg"
+      gambar
     };
     STATE.alat.unshift(newAlat);
+  } else if (type === 'FASILITAS') {
+    const newFas = {
+      id: `FAS-USR-${Date.now().toString().slice(-4)}`,
+      nama,
+      kode,
+      kategori: "Fasilitas Umum & K3",
+      stok,
+      stokTersedia: stok,
+      status: "Tersedia",
+      lokasi,
+      deskripsi: "Fasilitas pendukung laboratorium.",
+      gambar: gambar || 'assets/fumehood.jpg'
+    };
+    STATE.fasilitas.unshift(newFas);
+  } else if (type === 'BAHAN') {
+    const rumus = document.getElementById('invRumus')?.value.trim() || '-';
+    const jenis = document.getElementById('invJenisBahan')?.value.trim() || 'Reagen';
+    const newBahan = {
+      id: `BHN-USR-${Date.now().toString().slice(-4)}`,
+      nama,
+      kode,
+      rumus,
+      jenis,
+      stok: `${stok} Botol`,
+      lokasi,
+      bahaya: "GHS-01"
+    };
+    STATE.bahan.unshift(newBahan);
   }
 
   saveState();
+  STATE.tempAddInvPhoto = null;
+  document.getElementById('newInventoryForm')?.reset();
+  const preview = document.getElementById('addInvPreviewImg');
+  if (preview) preview.src = 'assets/glassware.jpg';
   closeModal('addInventoryModal');
   renderAllViews();
   showToast(`Item baru "${nama}" berhasil disimpan ke sistem.`, "success");

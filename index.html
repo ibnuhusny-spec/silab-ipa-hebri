@@ -112,6 +112,13 @@
               </a>
             </li>
             <li>
+              <a class="sidebar-menu-item" data-tab="tab-members" onclick="handleMenuClick('tab-members')">
+                <i class="fa-solid fa-users-line"></i>
+                <span>Data Mahasiswa & Dosen</span>
+                <span class="sidebar-counter" id="sidebarMembersCount">0</span>
+              </a>
+            </li>
+            <li>
               <a class="sidebar-menu-item" data-tab="tab-peminjaman" onclick="handleMenuClick('tab-peminjaman')">
                 <i class="fa-solid fa-clipboard-list"></i>
                 <span>Form Peminjaman</span>
@@ -413,6 +420,110 @@
           </div>
 
           <div class="items-grid" id="bahanGrid"></div>
+        </section>
+
+        <!-- ==================================================================
+             TAB: DATA MAHASISWA & DOSEN (CIVITAS TADRIS IPA)
+             ================================================================== -->
+        <section class="content-section" id="tab-members">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-users-line" style="color: #38bdf8;"></i> Data Mahasiswa & Dosen</h2>
+              <p>Direktori Civitas Akademika Tadris IPA IAI YAPNAS JENEPONTO terintegrasi Basis Data Cloud (Supabase Ready)</p>
+            </div>
+            <div class="section-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-primary btn-sm" onclick="triggerAddMemberFlow()">
+                <i class="fa-solid fa-user-plus"></i> Input Data Civitas
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openImportExcelModal()">
+                <i class="fa-solid fa-file-excel"></i> Import File Excel
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="downloadMemberTemplate()">
+                <i class="fa-solid fa-download"></i> Unduh Format Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- Supabase Ready Cloud Banner + Stats -->
+          <div class="members-stats-banner">
+            <div class="m-stat-card">
+              <div class="m-stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;"><i class="fa-solid fa-users"></i></div>
+              <div>
+                <div class="m-stat-val" id="bannerMemberTotal">0</div>
+                <div class="m-stat-lbl">Total Civitas Terdaftar</div>
+              </div>
+            </div>
+            <div class="m-stat-card">
+              <div class="m-stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;"><i class="fa-solid fa-user-graduate"></i></div>
+              <div>
+                <div class="m-stat-val" id="bannerMemberMhs">0</div>
+                <div class="m-stat-lbl">Mahasiswa Tadris IPA</div>
+              </div>
+            </div>
+            <div class="m-stat-card">
+              <div class="m-stat-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <div>
+                <div class="m-stat-val" id="bannerMemberDosen">0</div>
+                <div class="m-stat-lbl">Dosen & Pembina Lab</div>
+              </div>
+            </div>
+            <div class="m-stat-card supabase-ready-card">
+              <div class="m-stat-icon" style="background: rgba(62, 207, 142, 0.15); color: #3ecf8e;"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <div>
+                <div class="m-stat-val" style="font-size: 0.95rem; color: #3ecf8e; display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 8px; height: 8px; border-radius: 99px; background: #3ecf8e; display: inline-block;"></span>
+                  Supabase Ready
+                </div>
+                <div class="m-stat-lbl">Foto CDN & Storage Terhubung</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toolbar & Filters -->
+          <div class="toolbar-wrap" style="margin-top: 14px;">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="tabMemberSearchInput" class="form-control" placeholder="Cari nama, NIM, NIDN, jurusan, atau semester..." oninput="renderMembersView()">
+            </div>
+            <div class="filter-group">
+              <div class="filter-btn-group" id="tabMemberRoleFilters">
+                <button class="btn btn-sm btn-outline active" onclick="setMembersViewFilter('ALL', this)">Semua (<span id="tabCountAll">0</span>)</button>
+                <button class="btn btn-sm btn-outline" onclick="setMembersViewFilter('Mahasiswa', this)">🎓 Mahasiswa (<span id="tabCountMhs">0</span>)</button>
+                <button class="btn btn-sm btn-outline" onclick="setMembersViewFilter('Dosen', this)">👨‍🏫 Dosen (<span id="tabCountDosen">0</span>)</button>
+              </div>
+              <div class="view-mode-toggle" style="display: flex; gap: 4px; background: var(--bg-surface-elevated); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                <button type="button" class="btn btn-xs active" id="btnViewModeCards" onclick="switchMemberViewMode('cards')" title="Tampilan Kartu Identitas">
+                  <i class="fa-solid fa-address-card"></i> Kartu
+                </button>
+                <button type="button" class="btn btn-xs" id="btnViewModeTable" onclick="switchMemberViewMode('table')" title="Tampilan Tabel Lengkap">
+                  <i class="fa-solid fa-table-list"></i> Tabel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards View Container -->
+          <div id="tabMembersCardsGrid" class="members-cards-grid"></div>
+
+          <!-- Table View Container (Switchable) -->
+          <div id="tabMembersTableWrapper" class="table-responsive" style="display: none; margin-top: 16px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 45px;">No</th>
+                  <th>Foto Profil</th>
+                  <th>Peran</th>
+                  <th>Nama Lengkap & Gelar</th>
+                  <th>NIM / NIDN</th>
+                  <th>Semester / Jabatan</th>
+                  <th>No. WhatsApp</th>
+                  <th>Email Kampus</th>
+                  <th style="text-align: center; width: 160px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabMembersTableBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <!-- ==================================================================
@@ -850,6 +961,10 @@
       <i class="fa-solid fa-microscope"></i>
       <span>Alat</span>
     </button>
+    <button class="mobile-nav-btn" data-tab="tab-members" onclick="handleMenuClick('tab-members')">
+      <i class="fa-solid fa-users-line"></i>
+      <span>Civitas</span>
+    </button>
     <button class="mobile-nav-btn" data-tab="tab-peminjaman" onclick="handleMenuClick('tab-peminjaman')">
       <i class="fa-solid fa-clipboard-list"></i>
       <span>Pinjam (<span id="mobileCartCount">0</span>)</span>
@@ -1170,6 +1285,25 @@
             </select>
           </div>
 
+          <!-- Preview & Ubah Gambar Alat / Fasilitas (Supabase Storage CDN) -->
+          <div class="form-group" id="invPhotoFieldGroup">
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Gambar / Foto Alat atau Fasilitas</span>
+              <span class="supabase-hint"><i class="fa-solid fa-cloud"></i> Supabase Storage Ready</span>
+            </label>
+            <div class="image-upload-preview-box" onclick="document.getElementById('addInvPhotoFileInput').click()">
+              <img id="addInvPreviewImg" src="assets/glassware.jpg" alt="Preview Alat" class="admin-edit-preview-img">
+              <div style="font-size: 0.8rem; color: #10b981; font-weight: 600;">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Klik untuk Unggah Foto dari Perangkat
+              </div>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Mendukung JPG, PNG, WEBP</span>
+              <input type="file" id="addInvPhotoFileInput" accept="image/*" style="display: none;" onchange="handleAddInvPhotoSelect(event)">
+            </div>
+            <div style="margin-top: 8px;">
+              <input type="text" id="addInvImageUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Atau tempel link URL foto dari Supabase Storage / CDN di sini" oninput="handleAddInvImageUrlInput(this.value)">
+            </div>
+          </div>
+
           <div class="form-row-2">
             <div class="form-group">
               <label for="invKode">Kode Barang / Alat <span class="req">*</span></label>
@@ -1248,25 +1382,63 @@
        MODAL: TAMBAH SATU DATA CIVITAS (MAHASISWA / DOSEN)
        ====================================================================== -->
   <div class="modal-backdrop" id="addMemberModal">
-    <div class="modal-dialog" style="max-width: 520px;">
+    <div class="modal-dialog" style="max-width: 540px;">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-user-plus" style="color: #10b981;"></i> Tambah Civitas Akademika Baru</h3>
+        <h3><i class="fa-solid fa-user-plus" style="color: #10b981;"></i> Input Data Civitas Akademika Baru</h3>
         <button class="modal-close" onclick="closeModal('addMemberModal')">&times;</button>
       </div>
       <div class="modal-body">
         <form id="newMemberForm" onsubmit="saveNewMember(event)">
-          <div class="form-group">
-            <label for="memberPeran">Peran / Status Civitas <span class="req">*</span></label>
-            <select id="memberPeran" class="form-control" onchange="toggleMemberRoleFields()" required>
-              <option value="Mahasiswa">Mahasiswa Tadris IPA</option>
-              <option value="Dosen">Dosen / Peneliti</option>
-            </select>
+          
+          <!-- Pilih Dosen atau Mahasiswa (Intuitive Selector) -->
+          <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; display: block; color: var(--text-main);">
+            Pilih Status Civitas <span class="req">*</span>
+          </label>
+          <div class="role-selector-toggle-group">
+            <button type="button" class="role-toggle-card active" id="addRoleToggleMhs" onclick="setAddMemberRole('Mahasiswa')">
+              <div class="role-icon-box"><i class="fa-solid fa-user-graduate"></i></div>
+              <div class="role-meta">
+                <strong>🎓 Mahasiswa</strong>
+                <small>Input NIM & Semester</small>
+              </div>
+              <i class="fa-solid fa-circle-check check-indicator"></i>
+            </button>
+            <button type="button" class="role-toggle-card" id="addRoleToggleDosen" onclick="setAddMemberRole('Dosen')">
+              <div class="role-icon-box"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <div class="role-meta">
+                <strong>👨‍🏫 Dosen Pengampu</strong>
+                <small>Input NIDN / NIP & Jabatan</small>
+              </div>
+              <i class="fa-solid fa-circle-check check-indicator"></i>
+            </button>
+          </div>
+          <input type="hidden" id="memberPeran" value="Mahasiswa">
+
+          <!-- Foto Mahasiswa / Dosen (Supabase CDN URL + File Upload) -->
+          <div class="member-photo-field-wrap">
+            <img id="addMemberPhotoPreview" src="https://ui-avatars.com/api/?name=Mahasiswa+Baru&background=064e3b&color=34d399&bold=true&size=160" alt="Preview Foto Civitas" class="member-photo-preview-avatar">
+            <div class="member-photo-inputs">
+              <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 2px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa-solid fa-camera"></i> Foto Profil</span>
+                <span class="supabase-hint"><i class="fa-solid fa-cloud"></i> Supabase Storage Ready</span>
+              </label>
+              <input type="url" id="memberFotoUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Tempel URL Foto Supabase CDN / Web di sini..." oninput="previewAddMemberPhoto(this.value)">
+              <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+                <input type="file" id="memberFotoFileInput" accept="image/*" style="display: none;" onchange="handleAddMemberPhotoFile(event)">
+                <button type="button" class="btn btn-outline btn-xs" onclick="document.getElementById('memberFotoFileInput').click()">
+                  <i class="fa-solid fa-upload"></i> Unggah Foto
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" onclick="resetAddMemberPhoto()" title="Kembalikan ke avatar default">
+                  <i class="fa-solid fa-rotate-left"></i> Reset Foto
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label for="memberNama">Nama Lengkap & Gelar <span class="req">*</span></label>
-              <input type="text" id="memberNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir / Dr. ..." required>
+              <input type="text" id="memberNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir / Dr. ..." required oninput="handleMemberNamaChange(this.value, 'add')">
             </div>
             <div class="form-group">
               <label for="memberNomorInduk" id="labelMemberNomorInduk">NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
@@ -1280,8 +1452,8 @@
               <input type="text" id="memberJurusan" class="form-control" value="Tadris IPA" required>
             </div>
             <div class="form-group">
-              <label for="memberSemester" id="labelMemberSemester">Semester / Jabatan <span class="req">*</span></label>
-              <input type="text" id="memberSemester" class="form-control" placeholder="Contoh: Semester 5 / Dosen Pengampu" required>
+              <label for="memberSemester" id="labelMemberSemester">Semester <span class="req">*</span></label>
+              <input type="text" id="memberSemester" class="form-control" placeholder="Contoh: Semester 5" required>
             </div>
           </div>
 
@@ -1311,7 +1483,7 @@
        MODAL: EDIT DATA CIVITAS (MAHASISWA / DOSEN)
        ====================================================================== -->
   <div class="modal-backdrop" id="editMemberModal">
-    <div class="modal-dialog" style="max-width: 520px;">
+    <div class="modal-dialog" style="max-width: 540px;">
       <div class="modal-header">
         <h3><i class="fa-solid fa-user-pen" style="color: #10b981;"></i> Edit Data Civitas Akademika</h3>
         <button class="modal-close" onclick="closeModal('editMemberModal')">&times;</button>
@@ -1319,21 +1491,59 @@
       <div class="modal-body">
         <form id="editMemberForm" onsubmit="saveEditedMember(event)">
           <input type="hidden" id="editMemberId">
-          <div class="form-group">
-            <label for="editMemberPeran">Peran / Status Civitas <span class="req">*</span></label>
-            <select id="editMemberPeran" class="form-control" required>
-              <option value="Mahasiswa">Mahasiswa Tadris IPA</option>
-              <option value="Dosen">Dosen / Peneliti</option>
-            </select>
+
+          <!-- Role Toggle Selector (Tinggal Milih Dosen atau Mahasiswa) -->
+          <label style="font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; display: block; color: var(--text-main);">
+            Status Civitas <span class="req">*</span>
+          </label>
+          <div class="role-selector-toggle-group">
+            <button type="button" class="role-toggle-card active" id="editRoleToggleMhs" onclick="setEditMemberRole('Mahasiswa')">
+              <div class="role-icon-box"><i class="fa-solid fa-user-graduate"></i></div>
+              <div class="role-meta">
+                <strong>🎓 Mahasiswa</strong>
+                <small>Tadris IPA (NIM)</small>
+              </div>
+              <i class="fa-solid fa-circle-check check-indicator"></i>
+            </button>
+            <button type="button" class="role-toggle-card" id="editRoleToggleDosen" onclick="setEditMemberRole('Dosen')">
+              <div class="role-icon-box"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <div class="role-meta">
+                <strong>👨‍🏫 Dosen Pengampu</strong>
+                <small>Dosen / Peneliti (NIDN)</small>
+              </div>
+              <i class="fa-solid fa-circle-check check-indicator"></i>
+            </button>
+          </div>
+          <input type="hidden" id="editMemberPeran" value="Mahasiswa">
+
+          <!-- Foto Mahasiswa / Dosen (Supabase CDN URL + File Upload) -->
+          <div class="member-photo-field-wrap">
+            <img id="editMemberPhotoPreview" src="https://ui-avatars.com/api/?name=Civitas&background=064e3b&color=34d399&bold=true&size=160" alt="Preview Foto Civitas" class="member-photo-preview-avatar">
+            <div class="member-photo-inputs">
+              <label style="font-size: 0.8rem; font-weight: 700; margin-bottom: 2px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa-solid fa-camera"></i> Foto Profil</span>
+                <span class="supabase-hint"><i class="fa-solid fa-cloud"></i> Supabase Storage Ready</span>
+              </label>
+              <input type="url" id="editMemberFotoUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Tempel URL Foto Supabase CDN / Web di sini..." oninput="previewEditMemberPhoto(this.value)">
+              <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+                <input type="file" id="editMemberFotoFileInput" accept="image/*" style="display: none;" onchange="handleEditMemberPhotoFile(event)">
+                <button type="button" class="btn btn-outline btn-xs" onclick="document.getElementById('editMemberFotoFileInput').click()">
+                  <i class="fa-solid fa-upload"></i> Ganti Foto
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" onclick="resetEditMemberPhoto()" title="Kembalikan ke avatar default">
+                  <i class="fa-solid fa-rotate-left"></i> Reset Foto
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label for="editMemberNama">Nama Lengkap & Gelar <span class="req">*</span></label>
-              <input type="text" id="editMemberNama" class="form-control" required>
+              <input type="text" id="editMemberNama" class="form-control" required oninput="handleMemberNamaChange(this.value, 'edit')">
             </div>
             <div class="form-group">
-              <label for="editMemberNomorInduk">NIM / NIDN <span class="req">*</span></label>
+              <label for="editMemberNomorInduk" id="labelEditMemberNomorInduk">NIM / NIDN <span class="req">*</span></label>
               <input type="text" id="editMemberNomorInduk" class="form-control" required>
             </div>
           </div>
@@ -1344,7 +1554,7 @@
               <input type="text" id="editMemberJurusan" class="form-control" required>
             </div>
             <div class="form-group">
-              <label for="editMemberSemester">Semester / Jabatan <span class="req">*</span></label>
+              <label for="editMemberSemester" id="labelEditMemberSemester">Semester / Jabatan <span class="req">*</span></label>
               <input type="text" id="editMemberSemester" class="form-control" required>
             </div>
           </div>

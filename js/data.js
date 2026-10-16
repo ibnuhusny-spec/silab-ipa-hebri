@@ -664,7 +664,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Dosen Pengampu / Kepala Lab",
         telepon: "081241122334",
-        email: "ilyas@iaiyapnas.ac.id"
+        email: "ilyas@iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-D02",
@@ -674,7 +675,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Dosen Pembina Kimia",
         telepon: "085299887766",
-        email: "siti.rahmawati@iaiyapnas.ac.id"
+        email: "siti.rahmawati@iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-D03",
@@ -684,7 +686,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Dosen Pembina Biologi",
         telepon: "085311223344",
-        email: "faisal.amir@iaiyapnas.ac.id"
+        email: "faisal.amir@iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-D04",
@@ -694,7 +697,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Dosen Pembina Fisika",
         telepon: "082155667788",
-        email: "ilham.syarif@iaiyapnas.ac.id"
+        email: "ilham.syarif@iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-D05",
@@ -704,7 +708,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Ketua Jurusan Tadris IPA",
         telepon: "081399881122",
-        email: "nurul.mukhlisah@iaiyapnas.ac.id"
+        email: "nurul.mukhlisah@iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M01",
@@ -714,7 +719,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Semester 5",
         telepon: "081244556677",
-        email: "ikhsan.basir@mhs.iaiyapnas.ac.id"
+        email: "ikhsan.basir@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M02",
@@ -724,7 +730,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Semester 3",
         telepon: "082345678901",
-        email: "andi.reski@mhs.iaiyapnas.ac.id"
+        email: "andi.reski@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M03",
@@ -734,7 +741,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Semester 7",
         telepon: "085288776655",
-        email: "nurhaliza.syam@mhs.iaiyapnas.ac.id"
+        email: "nurhaliza.syam@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M04",
@@ -744,7 +752,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Semester 3",
         telepon: "081377889900",
-        email: "ahmad.rifai@mhs.iaiyapnas.ac.id"
+        email: "ahmad.rifai@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M05",
@@ -754,7 +763,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Semester 1",
         telepon: "082199001122",
-        email: "fatimah.azzahra@mhs.iaiyapnas.ac.id"
+        email: "fatimah.azzahra@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80"
     },
     {
         id: "MBR-M06",
@@ -764,7 +774,8 @@ const DEFAULT_MEMBERS = [
         jurusan: "Tadris IPA",
         statusSemester: "Penelitian Skripsi / Tugas Akhir",
         telepon: "085244332211",
-        email: "yusuf.daeng@mhs.iaiyapnas.ac.id"
+        email: "yusuf.daeng@mhs.iaiyapnas.ac.id",
+        foto: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&auto=format&fit=crop&q=80"
     }
 ];
 
