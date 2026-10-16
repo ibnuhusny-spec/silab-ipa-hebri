@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SILAB-IPA | Sistem Informasi Manajemen Inventaris Laboratorium Tadris IPA - IAI YAPNAS JENEPONTO</title>
+  <meta name="description" content="Sistem Informasi Manajemen Inventaris Laboratorium Terpadu Tadris IPA IAI YAPNAS Jeneponto. Katalog alat laboratorium, fasilitas umum, bahan kimia, peminjaman online berbasis QR Code, dan pelacakan pengembalian.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <link rel="icon" type="image/png" href="yapnas.png">
+</head>
+<body>
+
+  <!-- ======================================================================
+       1. SPLASH SCREEN DENGAN LOGO yapnas.png (ANIMASI BERNAPAS)
+       ====================================================================== -->
+  <div class="splash-overlay" id="splashScreen">
+    <div style="height: 10px;"></div>
+
+    <div class="splash-content">
+      <!-- Logo yapnas.png dengan Animasi Bernapas -->
+      <div class="splash-logo-wrap">
+        <img src="yapnas.png" alt="Logo Resmi IAI YAPNAS Jeneponto" class="splash-logo-img">
+      </div>
+
+      <h1 class="splash-inst-name">INSTITUT AGAMA ISLAM YAPNAS JENEPONTO</h1>
+      <div class="splash-sub-dept">FAKULTAS TARBIYYAH • JURUSAN TADRIS IPA</div>
+
+      <div class="splash-app-badge">
+        <i class="fa-solid fa-atom"></i>
+        <span>SILAB-IPA: Sistem Informasi Manajemen Inventaris & Peminjaman Lab</span>
+      </div>
+
+      <!-- Loading Bar -->
+      <div class="splash-progress-track">
+        <div class="splash-progress-fill" id="splashProgressBar"></div>
+      </div>
+      <div class="splash-loading-status" id="splashStatusText">Menginisialisasi Katalog & Sistem Keamanan Lab...</div>
+
+      <button class="btn-skip-splash" onclick="dismissSplash()">
+        Masuk Langsung <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- Alamat Lengkap Kampus di Bagian Bawah dengan Tulisan Kecil -->
+    <div class="splash-footer">
+      <div class="splash-address-text">
+        <i class="fa-solid fa-location-dot" style="color: #10b981;"></i>
+        Jl. Lanto Daeng Pasewang No. KM. 76, Cinong, Kelurahan Tonrokassi, Kecamatan Tamalatea, Kabupaten Jeneponto, Sulawesi Selatan 92351.
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Backdrop Overlay for Sidebar -->
+  <div class="sidebar-overlay-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
+
+  <!-- ======================================================================
+       2. APP SHELL WITH SIDEBAR (MENU DI SAMPING)
+       ====================================================================== -->
+  <div class="app-shell">
+
+    <!-- SIDEBAR NAVIGASI DISAMPING -->
+    <aside class="app-sidebar" id="appSidebar">
+      <!-- Sidebar Header -->
+      <div class="sidebar-header">
+        <img src="yapnas.png" alt="Logo IAI YAPNAS" class="sidebar-logo-img">
+        <div class="sidebar-brand-text">
+          <h2>SILAB-IPA <span style="font-size: 0.65rem; background: var(--primary-glow); color: #10b981; border: 1px solid #10b981; padding: 2px 6px; border-radius: 99px;">IAI YAPNAS</span></h2>
+          <div class="sidebar-brand-sub">Fakultas Tarbiyyah • Tadris IPA</div>
+        </div>
+      </div>
+
+      <!-- Sidebar Navigation Menu Groups -->
+      <div class="sidebar-nav-container">
+        
+        <!-- Group 1: Portal Akses Umum -->
+        <div>
+          <div class="nav-group-title">Akses Mahasiswa & Dosen</div>
+          <ul class="sidebar-menu-list">
+            <li>
+              <a class="sidebar-menu-item active" data-tab="tab-dashboard" onclick="handleMenuClick('tab-dashboard')">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Dashboard & SOP</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-menu-item" data-tab="tab-alat" onclick="handleMenuClick('tab-alat')">
+                <i class="fa-solid fa-microscope"></i>
+                <span>Alat Laboratorium</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-menu-item" data-tab="tab-fasilitas" onclick="handleMenuClick('tab-fasilitas')">
+                <i class="fa-solid fa-building-columns"></i>
+                <span>Fasilitas Umum</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-menu-item" data-tab="tab-bahan" onclick="handleMenuClick('tab-bahan')">
+                <i class="fa-solid fa-flask-vial"></i>
+                <span>Bahan Kimia</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-menu-item" data-tab="tab-peminjaman" onclick="handleMenuClick('tab-peminjaman')">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Form Peminjaman</span>
+                <span class="sidebar-counter" id="sidebarCartCount">0</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-menu-item" data-tab="tab-lacak" onclick="handleMenuClick('tab-lacak')">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Lacak & Pengembalian</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Group 2: Khusus Pengelola / Admin -->
+        <div>
+          <div class="nav-group-title">Akses Khusus Pengelola</div>
+          <ul class="sidebar-menu-list">
+            <li>
+              <a class="sidebar-menu-item admin-link" data-tab="tab-admin" onclick="triggerAdminAccess()">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Dashboard Admin</span>
+                <span id="adminPendingBadge" style="margin-left: auto; font-size: 0.7rem; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 1px 6px; border-radius: 99px;">Privat</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-row">
+          <div class="sidebar-status-tag">
+            <span style="width: 8px; height: 8px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
+            <span>08.00 - 16.30 WITA</span>
+          </div>
+          <button class="btn-icon" id="themeToggleBtn" title="Ganti Tema">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+          </button>
+        </div>
+        <div class="sidebar-copy">
+          IAI YAPNAS Jeneponto © 2026<br>
+          <span style="font-size: 0.65rem; color: var(--text-dim);">Tamalatea, Kab. Jeneponto</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ======================================================================
+         3. MAIN CONTENT WORKSPACE (KANAN)
+         ====================================================================== -->
+    <div class="app-main-layout">
+      
+      <!-- Top Header Bar with Mobile Hamburger & Quick Status -->
+      <header class="top-header-bar">
+        <div class="top-bar-left">
+          <button class="mobile-nav-toggle" onclick="toggleMobileSidebar()" title="Buka Menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-breadcrumb">
+            <span>SILAB-IPA</span> / <strong id="currentBreadcrumb">Dashboard & SOP Lab</strong>
+          </div>
+        </div>
+
+        <div class="top-bar-actions">
+          <!-- Role status pill -->
+          <div id="topRoleIndicator" class="btn btn-outline btn-sm" style="font-size: 0.78rem;" onclick="triggerAdminAccess()">
+            <i class="fa-solid fa-user-graduate" id="topRoleIcon" style="color: #38bdf8;"></i>
+            <span id="topRoleText">Akses: Mahasiswa / Dosen</span>
+          </div>
+
+          <!-- Quick Cart -->
+          <button class="btn btn-primary btn-sm" onclick="switchTab('tab-peminjaman')">
+            <i class="fa-solid fa-basket-shopping"></i>
+            <span id="topCartText">0 Item</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Workspace Container -->
+      <main class="workspace-container">
+
+        <!-- ==================================================================
+             TAB 1: DASHBOARD UMUM (MAHASISWA & DOSEN)
+             ================================================================== -->
+        <section class="content-section active" id="tab-dashboard">
+          
+          <!-- Hero Banner Section -->
+          <div class="hero-card">
+            <img src="assets/hero_banner.jpg" alt="Laboratorium IAI YAPNAS Jeneponto" class="hero-banner-bg">
+            <div class="hero-overlay">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span class="badge" style="background: var(--primary-glow); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.78rem; padding: 4px 12px; border-radius: 99px;">
+                  <i class="fa-solid fa-school"></i> IAI YAPNAS JENEPONTO
+                </span>
+                <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.78rem; padding: 4px 12px; border-radius: 99px;">
+                  <i class="fa-solid fa-flask"></i> Laboratorium Terpadu Tadris IPA
+                </span>
+              </div>
+
+              <div class="hero-text">
+                <h2>Portal Peminjaman & Manajemen Laboratorium Terpadu</h2>
+                <p>
+                  Sistem inventaris digital untuk Dosen dan Mahasiswa Jurusan Tadris IPA Fakultas Tarbiyyah IAI YAPNAS Jeneponto.
+                  Eksplorasi alat sains, fasilitas ruang praktikum, reagen kimia, pengajuan online dengan QR Code, dan pelacakan pengembalian secara transparan.
+                </p>
+              </div>
+
+              <!-- Quick Statistics -->
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon green"><i class="fa-solid fa-microscope"></i></div>
+                  <div>
+                    <div class="stat-number" id="statTotalAlat">0</div>
+                    <div class="stat-label">Alat Laboratorium</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon blue"><i class="fa-solid fa-couch"></i></div>
+                  <div>
+                    <div class="stat-number" id="statTotalFasilitas">0</div>
+                    <div class="stat-label">Fasilitas Umum Lab</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon gold"><i class="fa-solid fa-vials"></i></div>
+                  <div>
+                    <div class="stat-number" id="statTotalBahan">0</div>
+                    <div class="stat-label">Bahan Kimia & Reagen</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon purple"><i class="fa-solid fa-hand-holding-hand"></i></div>
+                  <div>
+                    <div class="stat-number" id="statPeminjamanAktif">0</div>
+                    <div class="stat-label">Peminjaman Aktif</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SKEMA PEMINJAMAN & PENGEMBALIAN BARANG YANG SANGAT AMAN (5 PILAR) -->
+          <div class="section-header" style="margin-top: 36px;">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-shield-halved" style="color: #10b981;"></i> Skema Peminjaman & Pengembalian yang Mudah & Sangat Aman</h2>
+              <p>5 Pilar Protokol Keamanan Terpadu untuk perlindungan aset instrumen Laboratorium Tadris IPA</p>
+            </div>
+          </div>
+
+          <div class="security-pillars-grid" id="securityPillarsGrid">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Struktur Organisasi Laboratorium -->
+          <div class="section-header" style="margin-top: 40px;">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-sitemap" style="color: #38bdf8;"></i> Struktur Organisasi Laboratorium</h2>
+              <p>Pengelola Laboratorium Terpadu Jurusan Tadris IPA - Fakultas Tarbiyyah IAI YAPNAS Jeneponto</p>
+            </div>
+          </div>
+          <div class="org-chart-grid" id="orgStructureGrid">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Tata Tertib Laboratorium -->
+          <div class="section-header" style="margin-top: 40px;">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-book-bookmark" style="color: #f59e0b;"></i> Tata Tertib & SOP Penggunaan Lab</h2>
+              <p>Aturan wajib sebelum praktikum, prosedur peminjaman alat, dan ketentuan ganti rugi kerusakan</p>
+            </div>
+          </div>
+          <div class="rules-container" id="rulesContainer">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Keselamatan Kerja (K3) & Piktogram GHS -->
+          <div class="section-header" style="margin-top: 40px;">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Keselamatan Kerja (K3) & Simbol Bahaya Kimia</h2>
+              <p>Piktogram bahaya GHS dan langkah tanggap darurat pertolongan pertama di laboratorium IPA</p>
+            </div>
+          </div>
+          <div class="k3-symbols-grid" id="k3SymbolsGrid">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Prosedur Darurat -->
+          <div class="emergency-protocols-row" id="emergencyProtocolsGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 2: ALAT LABORATORIUM
+             ================================================================== -->
+        <section class="content-section" id="tab-alat">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-microscope" style="color: #10b981;"></i> Katalog Alat Laboratorium IPA</h2>
+              <p>Daftar instrumen Fisika, Kimia, dan Biologi dengan spesifikasi, merk, negara pembuat, dan ketersediaan</p>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar-wrap">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchAlatInput" class="form-control" placeholder="Cari nama alat, kode, merk, buatan...">
+            </div>
+            <div class="filter-group">
+              <select id="filterStatusAlat" class="filter-select">
+                <option value="ALL">Semua Status</option>
+                <option value="Tersedia">🟢 Tersedia</option>
+                <option value="Dipinjam">🟡 Sedang Dipinjam</option>
+                <option value="Habis">🔴 Habis / Perbaikan</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Category Filter Chips -->
+          <div class="chips-scroll" id="alatCategoryChips">
+            <button class="filter-chip active" data-category="ALL">Semua Kategori</button>
+            <button class="filter-chip" data-category="Biologi & Histologi">Biologi & Histologi</button>
+            <button class="filter-chip" data-category="Kimia Analitik">Kimia Analitik</button>
+            <button class="filter-chip" data-category="Kimia & Biokimia">Kimia & Biokimia</button>
+            <button class="filter-chip" data-category="Fisika & Pengukuran">Fisika & Pengukuran</button>
+            <button class="filter-chip" data-category="Fisika Elektronika">Fisika Elektronika</button>
+          </div>
+
+          <!-- Grid -->
+          <div class="items-grid" id="alatGrid"></div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 3: FASILITAS UMUM
+             ================================================================== -->
+        <section class="content-section" id="tab-fasilitas">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-building-columns" style="color: #0284c7;"></i> Fasilitas Umum Laboratorium</h2>
+              <p>Sarana dan prasarana penunjang kegiatan praktikum dan penelitian di laboratorium</p>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar-wrap">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchFasilitasInput" class="form-control" placeholder="Cari fasilitas umum, kode, lokasi...">
+            </div>
+            <div class="filter-group">
+              <select id="filterStatusFasilitas" class="filter-select">
+                <option value="ALL">Semua Status</option>
+                <option value="Tersedia">🟢 Tersedia</option>
+                <option value="Dipinjam">🟡 Sedang Digunakan</option>
+                <option value="Habis">🔴 Habis</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="items-grid" id="fasilitasGrid"></div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 4: BAHAN KIMIA & REAGEN
+             ================================================================== -->
+        <section class="content-section" id="tab-bahan">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-flask-vial" style="color: #a855f7;"></i> Data Bahan Kimia & Reagen</h2>
+              <p>Katalog bahan kimia, rumus molekul, tingkat bahaya GHS, sisa stok, dan lokasi simpan khusus</p>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar-wrap">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchBahanInput" class="form-control" placeholder="Cari zat kimia, rumus kimia, atau jenis...">
+            </div>
+            <div class="filter-group">
+              <select id="filterJenisBahan" class="filter-select">
+                <option value="ALL">Semua Jenis Bahan</option>
+                <option value="Asam">Asam Kuat / Lemah</option>
+                <option value="Basa">Basa Kuat / Lemah</option>
+                <option value="Pelarut">Pelarut Organik / Flammable</option>
+                <option value="Reagen">Reagen Biokimia & Indikator</option>
+                <option value="Oksidator">Oksidator</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="items-grid" id="bahanGrid"></div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 5: FORMULIR PEMINJAMAN & KERANJANG
+             ================================================================== -->
+        <section class="content-section" id="tab-peminjaman">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-clipboard-list" style="color: #10b981;"></i> Formulir Peminjaman Inventaris</h2>
+              <p>Ajukan permohonan peminjaman alat laboratorium dengan tiket QR Code & Tanda Tangan Digital</p>
+            </div>
+          </div>
+
+          <div class="loan-layout-grid">
+            <!-- Keranjang Peminjaman -->
+            <div class="cart-summary-panel">
+              <div class="cart-header">
+                <h3><i class="fa-solid fa-basket-shopping" style="color: #10b981;"></i> Barang yang Dipilih</h3>
+                <span class="badge" id="cartBadgeText">0 item</span>
+              </div>
+
+              <div class="cart-items-list" id="cartItemsContainer">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                <button class="btn btn-outline btn-sm" onclick="clearCart()">
+                  <i class="fa-solid fa-trash"></i> Kosongkan
+                </button>
+                <span style="font-size: 0.82rem; color: var(--text-muted);" id="cartSummaryCount">Total: 0 unit</span>
+              </div>
+            </div>
+
+            <!-- Form Data Peminjam -->
+            <div class="loan-form-card">
+              <form id="loanForm" onsubmit="submitLoanApplication(event)">
+                
+                <label style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; display: block;">Peran Peminjam <span class="req">*</span></label>
+                <div class="form-role-selector">
+                  <div class="role-radio-card active" id="roleMhsCard" onclick="selectFormRole('Mahasiswa')">
+                    <i class="fa-solid fa-user-graduate" style="font-size: 1.4rem;"></i>
+                    <span>Mahasiswa</span>
+                  </div>
+                  <div class="role-radio-card" id="roleDosenCard" onclick="selectFormRole('Dosen')">
+                    <i class="fa-solid fa-chalkboard-user" style="font-size: 1.4rem;"></i>
+                    <span>Dosen / Peneliti</span>
+                  </div>
+                </div>
+                <input type="hidden" id="loanPeran" value="Mahasiswa">
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="loanNama">Nama Lengkap <span class="req">*</span></label>
+                    <input type="text" id="loanNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="loanNim" id="labelNimNidn">NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
+                    <input type="text" id="loanNim" class="form-control" placeholder="Contoh: 2320401005" required>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="loanJurusan">Fakultas / Program Studi</label>
+                    <input type="text" id="loanJurusan" class="form-control" value="Fakultas Tarbiyyah - Tadris IPA" readonly>
+                  </div>
+                  <div class="form-group">
+                    <label for="loanSemester" id="labelSemester">Semester</label>
+                    <select id="loanSemester" class="form-control">
+                      <option value="Semester 1">Semester 1</option>
+                      <option value="Semester 3">Semester 3</option>
+                      <option value="Semester 5" selected>Semester 5</option>
+                      <option value="Semester 7">Semester 7</option>
+                      <option value="Penelitian Skripsi / Tugas Akhir">Penelitian Skripsi / Tugas Akhir</option>
+                      <option value="Riset Dosen">Riset Dosen</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="loanMataKuliah">Mata Kuliah / Keperluan Praktikum <span class="req">*</span></label>
+                    <input type="text" id="loanMataKuliah" class="form-control" placeholder="Contoh: Praktikum Biologi Sel / Titrasi Kimia" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="loanDosen">Dosen Pengampu / Pembimbing <span class="req">*</span></label>
+                    <select id="loanDosen" class="form-control" required>
+                      <option value="">-- Pilih Dosen Pembina --</option>
+                      <option value="Dr. H. Muhammad Ilyas, M.Pd.">Dr. H. Muhammad Ilyas, M.Pd. (Kepala Lab)</option>
+                      <option value="Siti Rahmawati, M.Si.">Siti Rahmawati, M.Si. (Pembina Kimia)</option>
+                      <option value="Faisal Amir, M.Pd.">Faisal Amir, M.Pd. (Pembina Biologi)</option>
+                      <option value="Ilham Syarif, M.Si.">Ilham Syarif, M.Si. (Pembina Fisika)</option>
+                      <option value="Nurul Mukhlisah, M.Pd.">Nurul Mukhlisah, M.Pd. (Ketua Jurusan)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label for="loanTelepon">No. WhatsApp / Telepon Aktif <span class="req">*</span></label>
+                    <input type="tel" id="loanTelepon" class="form-control" placeholder="Contoh: 081244556677" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="loanTglPinjam">Tanggal Peminjaman <span class="req">*</span></label>
+                    <input type="date" id="loanTglPinjam" class="form-control" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="loanTglKembali">Tanggal Rencana Pengembalian <span class="req">*</span></label>
+                  <input type="date" id="loanTglKembali" class="form-control" required>
+                </div>
+
+                <!-- Canvas Tanda Tangan Digital -->
+                <div class="form-group">
+                  <label>Tanda Tangan Digital Peminjam (Pilar 1 Keamanan) <span class="req">*</span></label>
+                  <div class="signature-box-wrap">
+                    <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                    <div class="signature-controls">
+                      <span>Tanda tangani di area putih di atas</span>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="clearSignature()">
+                        <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pakta Integritas -->
+                <div class="agreement-check">
+                  <input type="checkbox" id="checkAgreement" required>
+                  <label for="checkAgreement">
+                    Saya menyatakan data di atas benar, berjanji merawat alat sebaik-baiknya, mematuhi Protokol Keamanan Lab IAI YAPNAS Jeneponto, dan bersedia mengganti alat jika terjadi kerusakan/kehilangan dalam 7 hari kerja.
+                  </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px;">
+                  <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan & Dapatkan E-Tiket QR
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 6: LACAK & PENGEMBALIAN BARANG
+             ================================================================== -->
+        <section class="content-section" id="tab-lacak">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <h2><i class="fa-solid fa-clock-rotate-left" style="color: #38bdf8;"></i> Lacak Tiket & Form Pengembalian</h2>
+              <p>Lacak status peminjaman Anda dan unggah foto bukti kondisi fisik alat untuk verifikasi pengembalian</p>
+            </div>
+          </div>
+
+          <div class="track-search-card">
+            <div class="form-row-2" style="align-items: flex-end; margin-bottom: 0;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="trackSearchInput">Masukkan Nomor Tiket atau NIM/NIDN</label>
+                <div class="search-input-wrap">
+                  <i class="fa-solid fa-ticket"></i>
+                  <input type="text" id="trackSearchInput" class="form-control" placeholder="Contoh: PNJ-202610-001 atau 2320401005">
+                </div>
+              </div>
+              <div>
+                <button class="btn btn-primary" onclick="searchTrackingLoan()" style="height: 44px;">
+                  <i class="fa-solid fa-magnifying-glass"></i> Lacak Status
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tracking Detail -->
+          <div id="trackResultContainer" style="display: none;"></div>
+
+          <div class="section-header" style="margin-top: 36px;">
+            <div class="section-title-wrap">
+              <h3>Daftar Riwayat Transaksi Peminjaman</h3>
+              <p>Histori permohonan inventaris laboratorium</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No. Tiket</th>
+                  <th>Peminjam</th>
+                  <th>Peran / NIM</th>
+                  <th>Mata Kuliah</th>
+                  <th>Barang Dipinjam</th>
+                  <th>Tgl Pinjam / Kembali</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="allLoansTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             TAB 7: DASHBOARD KHUSUS ADMIN / LABORAN (TERPISAH)
+             ================================================================== -->
+        <section class="content-section" id="tab-admin">
+          
+          <div class="admin-workspace-card">
+            <div class="admin-header-row">
+              <div class="admin-profile-box">
+                <div class="admin-avatar">
+                  <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <h3 style="font-size: 1.25rem; font-weight: 800;" id="adminDisplayNama">Ahmad Fadhlillah, S.Si.</h3>
+                    <button class="btn btn-outline btn-sm" onclick="openEditLaboranModal()" title="Ubah Nama & Data Pranata Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #10b981;">
+                      <i class="fa-solid fa-user-pen"></i> Edit Nama / Profil
+                    </button>
+                  </div>
+                  <div style="font-size: 0.82rem; color: #10b981; font-weight: 600;" id="adminDisplayJabatan">
+                    Pranata Laboratorium IPA • <span id="adminDisplayNip">NIP. 19930418 201903 1 007</span>
+                  </div>
+                  <div style="font-size: 0.74rem; color: var(--text-dim);">Laboratorium Terpadu Fakultas Tarbiyyah IAI YAPNAS Jeneponto</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-sm" onclick="openAddInventoryModal()">
+                  <i class="fa-solid fa-circle-plus"></i> Tambah Item Baru
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="exportDataToCSV()">
+                  <i class="fa-solid fa-file-csv"></i> Unduh Data CSV
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="logoutAdminMode()">
+                  <i class="fa-solid fa-right-from-bracket"></i> Keluar Mode Admin
+                </button>
+              </div>
+            </div>
+
+            <!-- Admin Sub-navigation Tabs -->
+            <div class="admin-tabs-nav">
+              <button class="admin-tab-btn active" id="btnAdminTabManage" onclick="switchAdminSubTab('admin-tab-manage')">
+                <i class="fa-solid fa-boxes-stacked"></i> Kelola Inventaris & Edit Gambar
+              </button>
+              <button class="admin-tab-btn" id="btnAdminTabApproval" onclick="switchAdminSubTab('admin-tab-approval')">
+                <i class="fa-solid fa-inbox"></i> Antrean Verifikasi Pinjaman
+              </button>
+              <button class="admin-tab-btn" id="btnAdminTabReturns" onclick="switchAdminSubTab('admin-tab-returns')">
+                <i class="fa-solid fa-clipboard-check"></i> Validasi Foto Pengembalian
+              </button>
+            </div>
+
+            <!-- SUB-TAB 1: KELOLA INVENTARIS & EDIT GAMBAR -->
+            <div id="admin-tab-manage" class="admin-sub-view">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 0.95rem; font-weight: 700;">
+                  Daftar Alat Laboratorium (<span id="adminAlatCount">0</span> Item)
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="adminSearchItemInput" class="form-control" style="width: 240px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Cari nama / kode barang..." oninput="renderAdminInventoryTable()">
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 70px;">Gambar</th>
+                      <th>Kode</th>
+                      <th>Nama Barang / Alat</th>
+                      <th>Merk & Buatan</th>
+                      <th>Stok (Tersedia/Total)</th>
+                      <th>Status</th>
+                      <th>Aksi Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminInventoryTableBody">
+                    <!-- Rendered dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 2: ANTREAN PERSETUJUAN PINJAMAN -->
+            <div id="admin-tab-approval" class="admin-sub-view" style="display: none;">
+              <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;">
+                Pengajuan Peminjaman Menunggu Approval Laboran
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tiket</th>
+                      <th>Peminjam</th>
+                      <th>NIM / NIDN</th>
+                      <th>Mata Kuliah & Dosen</th>
+                      <th>Barang Dipinjam</th>
+                      <th>Jadwal Pinjam</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminQueueTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 3: VALIDASI PENGEMBALIAN & AUDIT FOTO -->
+            <div id="admin-tab-returns" class="admin-sub-view" style="display: none;">
+              <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;">
+                Pemeriksaan Foto Bukti Pengembalian & Kondisi Fisik Alat
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tiket</th>
+                      <th>Peminjam</th>
+                      <th>Barang</th>
+                      <th>Foto Bukti</th>
+                      <th>Kondisi & Catatan</th>
+                      <th>Status Akhir</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminReturnsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ======================================================================
+       4. MOBILE BOTTOM NAVIGATION (KHUSUS TAMPILAN HP)
+       ====================================================================== -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-nav-btn active" data-tab="tab-dashboard" onclick="handleMenuClick('tab-dashboard')">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>Beranda</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-alat" onclick="handleMenuClick('tab-alat')">
+      <i class="fa-solid fa-microscope"></i>
+      <span>Alat</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-peminjaman" onclick="handleMenuClick('tab-peminjaman')">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <span>Pinjam (<span id="mobileCartCount">0</span>)</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-lacak" onclick="handleMenuClick('tab-lacak')">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Lacak</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-admin" onclick="triggerAdminAccess()">
+      <i class="fa-solid fa-user-shield"></i>
+      <span>Admin</span>
+    </button>
+  </nav>
+
+  <!-- ======================================================================
+       MODAL: LOGIN PIN KHUSUS ADMIN LABORAN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="adminLoginModal">
+    <div class="modal-dialog" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <h3 style="color: #f59e0b;"><i class="fa-solid fa-lock"></i> Autentikasi Pengelola Lab</h3>
+        <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">
+          Masukkan PIN atau Sandi Laboran untuk mengakses Dashboard Khusus Manajemen Inventaris.
+        </p>
+        <form onsubmit="handleAdminLogin(event)">
+          <div class="form-group">
+            <input type="password" id="adminPinInput" class="form-control" placeholder="Masukkan PIN (Default: 1234)" style="text-align: center; font-size: 1.3rem; letter-spacing: 0.25em; font-family: var(--font-mono);" required autofocus>
+          </div>
+          <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 16px;">
+            <i class="fa-solid fa-info-circle"></i> Petunjuk Default PIN: <strong>1234</strong> atau sandi <strong>admin</strong>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;">
+            <i class="fa-solid fa-key"></i> Buka Dashboard Admin
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: EDIT PROFIL PRANATA LABORATORIUM (LABORAN)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="editLaboranModal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-pen" style="color: #10b981;"></i> Edit Pranata Laboratorium</h3>
+        <button class="modal-close" onclick="closeModal('editLaboranModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          Ubah nama, gelar, NIP, atau kontak Pranata Laboratorium. Data ini akan otomatis diperbarui pada profil admin, struktur organisasi, dan tanda tangan surat peminjaman.
+        </p>
+        <form id="editLaboranForm" onsubmit="saveLaboranProfile(event)">
+          <div class="form-group">
+            <label for="laboranInputNama">Nama Lengkap & Gelar <span class="req">*</span></label>
+            <input type="text" id="laboranInputNama" class="form-control" placeholder="Contoh: Ahmad Fadhlillah, S.Si." required>
+          </div>
+          <div class="form-group">
+            <label for="laboranInputNip">NIP / NUPTK / No. Pegawai <span class="req">*</span></label>
+            <input type="text" id="laboranInputNip" class="form-control" placeholder="Contoh: 19930418 201903 1 007" required>
+          </div>
+          <div class="form-group">
+            <label for="laboranInputJabatan">Jabatan Struktural Laboratorium</label>
+            <input type="text" id="laboranInputJabatan" class="form-control" placeholder="Contoh: Pranata Laboratorium IPA" required>
+          </div>
+          <div class="form-group">
+            <label for="laboranInputKontak">Nomor WhatsApp / Kontak Aktif</label>
+            <input type="text" id="laboranInputKontak" class="form-control" placeholder="Contoh: +62 821-8899-7600">
+          </div>
+          <div class="modal-footer" style="padding: 12px 0 0; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editLaboranModal')">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Simpan Profil Laboran
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: EDIT INVENTARIS TERMASUK UBAH GAMBAR (FITUR KHUSUS ADMIN)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="editItemModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color: #10b981;"></i> Edit Data Inventaris & Gambar</h3>
+        <button class="modal-close" onclick="closeModal('editItemModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editItemForm" onsubmit="saveEditedItem(event)">
+          <input type="hidden" id="editItemId">
+          <input type="hidden" id="editItemType">
+
+          <!-- Preview & Ubah Gambar -->
+          <div class="form-group">
+            <label>Gambar / Foto Alat</label>
+            <div class="image-upload-preview-box" onclick="document.getElementById('editItemPhotoInput').click()">
+              <img id="editItemPreviewImg" src="assets/glassware.jpg" alt="Preview Alat" class="admin-edit-preview-img">
+              <div style="font-size: 0.8rem; color: #10b981; font-weight: 600;">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Klik untuk Unggah / Ganti Foto Baru dari Perangkat
+              </div>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Mendukung file JPG, PNG, WEBP</span>
+              <input type="file" id="editItemPhotoInput" accept="image/*" style="display: none;" onchange="handleEditPhotoSelect(event)">
+            </div>
+            <div style="margin-top: 8px;">
+              <input type="text" id="editItemImageUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Atau tempel link URL gambar di sini" oninput="handleEditImageUrlInput(this.value)">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editItemKode">Kode Barang <span class="req">*</span></label>
+              <input type="text" id="editItemKode" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="editItemNama">Nama Barang <span class="req">*</span></label>
+              <input type="text" id="editItemNama" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editItemMerk">Merk / Brand</label>
+              <input type="text" id="editItemMerk" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="editItemUkuran">Ukuran / Spesifikasi</label>
+              <input type="text" id="editItemUkuran" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editItemBuatan">Buatan (Negara/Pabrik)</label>
+              <input type="text" id="editItemBuatan" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="editItemKategori">Kategori</label>
+              <input type="text" id="editItemKategori" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editItemStok">Stok Total <span class="req">*</span></label>
+              <input type="number" id="editItemStok" class="form-control" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="editItemStatus">Status Ketersediaan <span class="req">*</span></label>
+              <select id="editItemStatus" class="form-control">
+                <option value="Tersedia">🟢 Tersedia</option>
+                <option value="Dipinjam">🟡 Sedang Dipinjam</option>
+                <option value="Habis">🔴 Habis / Perbaikan</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 14px 0 0; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editItemModal')">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: DETAIL ITEM
+       ====================================================================== -->
+  <div class="modal-backdrop" id="detailItemModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalItemTitle">Detail Item Inventaris</h3>
+        <button class="modal-close" onclick="closeModal('detailItemModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="modalItemBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('detailItemModal')">Tutup</button>
+        <button class="btn btn-primary" id="modalItemActionBtn">Pinjam Item Ini</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: SUKSES PENGAJUAN PINJAM & QR CODE
+       ====================================================================== -->
+  <div class="modal-backdrop" id="loanSuccessModal">
+    <div class="modal-dialog" style="text-align: center;">
+      <div class="modal-header">
+        <h3 style="color: #10b981;"><i class="fa-solid fa-circle-check"></i> Pengajuan Berhasil Terkirim!</h3>
+        <button class="modal-close" onclick="closeModal('loanSuccessModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); margin-bottom: 12px;">
+          Permohonan peminjaman Anda telah tercatat. Bawa E-Tiket dan QR Code ini saat verifikasi serah terima di Laboratorium Tadris IPA IAI YAPNAS Jeneponto.
+        </p>
+
+        <div style="background: var(--bg-surface-elevated); padding: 10px 16px; border-radius: var(--radius-md); display: inline-block; margin-bottom: 14px;">
+          <div style="font-size: 0.78rem; color: var(--text-muted);">NOMOR E-TIKET DIGITAL</div>
+          <div style="font-size: 1.5rem; font-weight: 800; font-family: var(--font-mono); color: #10b981;" id="successTicketNum">PNJ-XXXX</div>
+        </div>
+
+        <div class="qr-render-box" id="successQrContainer"></div>
+
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+          Tunjukkan QR Code ini kepada Laboran di <strong>Lab Terpadu Tadris IPA IAI YAPNAS Jeneponto</strong>.
+        </p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeModal('loanSuccessModal')">Selesai</button>
+        <button class="btn btn-primary" onclick="printReceiptFromSuccess()">
+          <i class="fa-solid fa-print"></i> Cetak Bukti Pinjam (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: FORM PENGEMBALIAN BARANG DENGAN FOTO BUKTI
+       ====================================================================== -->
+  <div class="modal-backdrop" id="returnFormModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera" style="color: #10b981;"></i> Form Bukti Pengembalian Alat</h3>
+        <button class="modal-close" onclick="closeModal('returnFormModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: var(--bg-surface-elevated); padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Nomor Tiket: <strong id="returnModalTicket" style="color: #38bdf8;"></strong></div>
+          <div style="font-size: 0.95rem; font-weight: 700;" id="returnModalBorrower"></div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);" id="returnModalItems"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Unggah / Ambil Foto Bukti Fisik Pengembalian (Pilar 4 Keamanan) <span class="req">*</span></label>
+          <div class="photo-upload-zone" onclick="document.getElementById('returnPhotoInput').click()">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #10b981; margin-bottom: 8px;"></i>
+            <p><strong>Klik untuk memilih foto</strong> atau potret langsung via kamera HP</p>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Foto kebersihan lensa, buret, atau kelengkapan alat</span>
+            <input type="file" id="returnPhotoInput" accept="image/*" style="display: none;" onchange="handleReturnPhotoSelect(event)">
+            <img id="returnPhotoPreview" class="preview-return-image" alt="Preview Foto Pengembalian">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="returnConditionSelect">Kondisi Fisik Alat saat Dikembalikan <span class="req">*</span></label>
+          <select id="returnConditionSelect" class="form-control">
+            <option value="Baik & Lengkap">🟢 Baik, Bersih & Lengkap Sesuai Kondisi Awal</option>
+            <option value="Pecah / Kerusakan Sebagian">🔴 Terdapat Kerusakan / Alat Gelas Pecah (Wajib Ganti)</option>
+            <option value="Komponen Kurang">🟡 Komponen/Kabel Ada yang Kurang</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="returnNotes">Catatan Tambahan Pengembalian</label>
+          <textarea id="returnNotes" class="form-control" rows="2" placeholder="Contoh: Alat telah dibilas aquades dan dikeringkan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('returnFormModal')">Batal</button>
+        <button class="btn btn-primary" onclick="submitReturnProof()">
+          <i class="fa-solid fa-check"></i> Simpan & Kirim Pengembalian
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: TAMBAH INVENTARIS BARU
+       ====================================================================== -->
+  <div class="modal-backdrop" id="addInventoryModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-circle-plus" style="color: #10b981;"></i> Tambah Inventaris Laboratorium</h3>
+        <button class="modal-close" onclick="closeModal('addInventoryModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="newInventoryForm" onsubmit="saveNewInventoryItem(event)">
+          <div class="form-group">
+            <label for="invType">Kategori Master <span class="req">*</span></label>
+            <select id="invType" class="form-control" onchange="toggleAddInventoryFields()" required>
+              <option value="ALAT">Alat Laboratorium</option>
+              <option value="FASILITAS">Fasilitas Umum</option>
+              <option value="BAHAN">Bahan Kimia</option>
+            </select>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="invKode">Kode Barang / Alat <span class="req">*</span></label>
+              <input type="text" id="invKode" class="form-control" placeholder="Contoh: MC-BIO-02" required>
+            </div>
+            <div class="form-group">
+              <label for="invNama">Nama Barang / Bahan <span class="req">*</span></label>
+              <input type="text" id="invNama" class="form-control" placeholder="Contoh: Mikroskop Monokuler" required>
+            </div>
+          </div>
+
+          <div id="alatSpecificFields">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="invMerk">Merk / Brand</label>
+                <input type="text" id="invMerk" class="form-control" placeholder="Contoh: Olympus / Pyrex">
+              </div>
+              <div class="form-group">
+                <label for="invUkuran">Ukuran / Spesifikasi</label>
+                <input type="text" id="invUkuran" class="form-control" placeholder="Contoh: 50 mL / 40x-600x">
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="invBuatan">Buatan (Negara/Pabrik)</label>
+                <input type="text" id="invBuatan" class="form-control" placeholder="Contoh: Jepang / Jerman / Indonesia">
+              </div>
+              <div class="form-group">
+                <label for="invKategoriAlat">Sub-Kategori</label>
+                <select id="invKategoriAlat" class="form-control">
+                  <option value="Biologi & Histologi">Biologi & Histologi</option>
+                  <option value="Kimia Analitik">Kimia Analitik</option>
+                  <option value="Kimia & Biokimia">Kimia & Biokimia</option>
+                  <option value="Fisika & Pengukuran">Fisika & Pengukuran</option>
+                  <option value="Fisika Elektronika">Fisika Elektronika</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="bahanSpecificFields" style="display: none;">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="invRumus">Rumus Kimia</label>
+                <input type="text" id="invRumus" class="form-control" placeholder="Contoh: H2SO4 / NaCl">
+              </div>
+              <div class="form-group">
+                <label for="invJenisBahan">Jenis Bahan Kimia</label>
+                <input type="text" id="invJenisBahan" class="form-control" placeholder="Contoh: Asam Kuat / B3">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="invStok">Jumlah / Stok <span class="req">*</span></label>
+              <input type="number" id="invStok" class="form-control" value="5" min="1" required>
+            </div>
+            <div class="form-group">
+              <label for="invLokasi">Lokasi Penyimpanan di Lab</label>
+              <input type="text" id="invLokasi" class="form-control" placeholder="Contoh: Lemari Kaca 01 / Rak Reagen B">
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 12px 0 0; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('addInventoryModal')">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan ke Inventaris</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       PRINT-ONLY SHEET: FORMAT RESMI SURAT PEMINJAMAN IAI YAPNAS JENEPONTO
+       ====================================================================== -->
+  <div class="print-only-sheet" id="printSheetArea">
+    <div class="print-kop-surat">
+      <img src="yapnas.png" class="print-kop-logo" alt="Logo IAI YAPNAS">
+      <div class="print-kop-text">
+        <h2>INSTITUT AGAMA ISLAM YAPNAS JENEPONTO</h2>
+        <h3>FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
+        <p><strong>Laboratorium Terpadu (Fisika - Kimia - Biologi)</strong></p>
+        <p>Jl. Lanto Daeng Pasewang No. KM. 76, Cinong, Tonrokassi, Tamalatea, Jeneponto, Sulawesi Selatan 92351</p>
+      </div>
+    </div>
+
+    <div class="print-title">SURAT BUKTI PEMINJAMAN ALAT & FASILITAS LABORATORIUM</div>
+    <div class="print-nomor-surat">Nomor E-Tiket: <span id="printTicketNumber">PNJ-XXXXX</span></div>
+
+    <table style="width: 100%; font-size: 10pt; margin-bottom: 12px; border-collapse: collapse;">
+      <tr>
+        <td style="width: 25%; padding: 4px;"><strong>Nama Peminjam</strong></td>
+        <td style="width: 25%; padding: 4px;">: <span id="printBorrowerName">-</span></td>
+        <td style="width: 25%; padding: 4px;"><strong>Peran / Status</strong></td>
+        <td style="width: 25%; padding: 4px;">: <span id="printBorrowerRole">-</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>NIM / NIDN</strong></td>
+        <td style="padding: 4px;">: <span id="printBorrowerNim">-</span></td>
+        <td style="padding: 4px;"><strong>Program Studi</strong></td>
+        <td style="padding: 4px;">: Tadris IPA - Tarbiyyah</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Mata Kuliah</strong></td>
+        <td style="padding: 4px;">: <span id="printBorrowerCourse">-</span></td>
+        <td style="padding: 4px;"><strong>Dosen Pembina</strong></td>
+        <td style="padding: 4px;">: <span id="printBorrowerLecturer">-</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Tgl Pinjam</strong></td>
+        <td style="padding: 4px;">: <span id="printLoanDate">-</span></td>
+        <td style="padding: 4px;"><strong>Batas Kembali</strong></td>
+        <td style="padding: 4px;">: <span id="printReturnDueDate">-</span></td>
+      </tr>
+    </table>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 8%;">No</th>
+          <th style="width: 20%;">Kode Barang</th>
+          <th style="width: 42%;">Nama Barang / Alat</th>
+          <th style="width: 15%;">Merk & Buatan</th>
+          <th style="width: 15%;">Jumlah</th>
+        </tr>
+      </thead>
+      <tbody id="printItemsTableBody"></tbody>
+    </table>
+
+    <div class="print-signature-grid">
+      <div>
+        <p>Jeneponto, <span id="printCurrentDate"></span></p>
+        <p><strong>Peminjam (Mahasiswa/Dosen),</strong></p>
+        <div class="print-sig-space" id="printBorrowerSigArea"></div>
+        <p><strong id="printSignerName">( ........................................ )</strong></p>
+      </div>
+
+      <div>
+        <p>Mengetahui & Menyetujui,</p>
+        <p><strong>Laboran Lab Terpadu IPA,</strong></p>
+        <div class="print-sig-space" style="display: flex; align-items: center; justify-content: center;">
+          <div id="printQrVerifyBox" style="width: 65px; height: 65px;"></div>
+        </div>
+        <p><strong id="printLaboranName">Ahmad Fadhlillah, S.Si.</strong></p>
+        <p style="font-size: 8.5pt;">NIP. <span id="printLaboranNip">19930418 201903 1 007</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/qrcode.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
