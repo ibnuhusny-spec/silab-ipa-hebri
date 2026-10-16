@@ -1509,3 +1509,104 @@ body {
 .print-only-sheet {
   display: none;
 }
+
+/* ==========================================================================
+   11. ENHANCED FEATURES: DISCREET ADMIN, CIVITAS SELECTOR, EXCEL & BAP
+   ========================================================================== */
+
+/* Discreet Admin Trigger Button */
+.discreet-admin-lock {
+  opacity: 0.35;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+  color: var(--text-dim);
+}
+.discreet-admin-lock:hover {
+  opacity: 0.9;
+  color: #10b981;
+}
+
+/* Member Quick Select Card in Loan Form */
+.member-select-card {
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.member-select-card:focus-within {
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+
+/* Password Field with Eye Toggle */
+.password-field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-field-wrap .btn-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+  transition: color var(--transition-fast);
+}
+.password-field-wrap .btn-password-toggle:hover {
+  color: var(--text-main);
+}
+
+/* Excel Dropzone & Preview */
+.excel-dropzone {
+  border: 2px dashed rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 28px 16px;
+  text-align: center;
+  background: rgba(16, 185, 129, 0.03);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.excel-dropzone:hover, .excel-dropzone.dragover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Members Table Badges & Action Buttons */
+.badge-role-mhs {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge-role-dosen {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Damage Claim Card */
+.damage-claim-box {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+

@@ -654,3 +654,122 @@ const DEFAULT_PEMINJAMAN = [
         verifikatorLaboran: null
     }
 ];
+
+const DEFAULT_MEMBERS = [
+    {
+        id: "MBR-D01",
+        peran: "Dosen",
+        nama: "Dr. H. Muhammad Ilyas, M.Pd.",
+        nomorInduk: "0920068001",
+        jurusan: "Tadris IPA",
+        statusSemester: "Dosen Pengampu / Kepala Lab",
+        telepon: "081241122334",
+        email: "ilyas@iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-D02",
+        peran: "Dosen",
+        nama: "Siti Rahmawati, M.Si.",
+        nomorInduk: "0910098902",
+        jurusan: "Tadris IPA",
+        statusSemester: "Dosen Pembina Kimia",
+        telepon: "085299887766",
+        email: "siti.rahmawati@iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-D03",
+        peran: "Dosen",
+        nama: "Faisal Amir, M.Pd.",
+        nomorInduk: "0904118703",
+        jurusan: "Tadris IPA",
+        statusSemester: "Dosen Pembina Biologi",
+        telepon: "085311223344",
+        email: "faisal.amir@iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-D04",
+        peran: "Dosen",
+        nama: "Ilham Syarif, M.Si.",
+        nomorInduk: "0914029104",
+        jurusan: "Tadris IPA",
+        statusSemester: "Dosen Pembina Fisika",
+        telepon: "082155667788",
+        email: "ilham.syarif@iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-D05",
+        peran: "Dosen",
+        nama: "Nurul Mukhlisah, M.Pd.",
+        nomorInduk: "0915038405",
+        jurusan: "Tadris IPA",
+        statusSemester: "Ketua Jurusan Tadris IPA",
+        telepon: "081399881122",
+        email: "nurul.mukhlisah@iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M01",
+        peran: "Mahasiswa",
+        nama: "Muh. Ikhsan Basir",
+        nomorInduk: "2320401005",
+        jurusan: "Tadris IPA",
+        statusSemester: "Semester 5",
+        telepon: "081244556677",
+        email: "ikhsan.basir@mhs.iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M02",
+        peran: "Mahasiswa",
+        nama: "Andi Reski Amelia",
+        nomorInduk: "2320401022",
+        jurusan: "Tadris IPA",
+        statusSemester: "Semester 3",
+        telepon: "082345678901",
+        email: "andi.reski@mhs.iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M03",
+        peran: "Mahasiswa",
+        nama: "Nurhaliza Syam",
+        nomorInduk: "2320401018",
+        jurusan: "Tadris IPA",
+        statusSemester: "Semester 7",
+        telepon: "085288776655",
+        email: "nurhaliza.syam@mhs.iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M04",
+        peran: "Mahasiswa",
+        nama: "Ahmad Rifai Karaeng",
+        nomorInduk: "2420401012",
+        jurusan: "Tadris IPA",
+        statusSemester: "Semester 3",
+        telepon: "081377889900",
+        email: "ahmad.rifai@mhs.iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M05",
+        peran: "Mahasiswa",
+        nama: "Siti Fatimah Azzahra",
+        nomorInduk: "2520401001",
+        jurusan: "Tadris IPA",
+        statusSemester: "Semester 1",
+        telepon: "082199001122",
+        email: "fatimah.azzahra@mhs.iaiyapnas.ac.id"
+    },
+    {
+        id: "MBR-M06",
+        peran: "Mahasiswa",
+        nama: "Muhammad Yusuf Daeng",
+        nomorInduk: "2220401030",
+        jurusan: "Tadris IPA",
+        statusSemester: "Penelitian Skripsi / Tugas Akhir",
+        telepon: "085244332211",
+        email: "yusuf.daeng@mhs.iaiyapnas.ac.id"
+    }
+];
+
+const DEFAULT_ADMIN_CONFIG = {
+    email: "admin.lab@iaiyapnas.ac.id",
+    password: "Yapnas@LabIPA2026!"
+};
+

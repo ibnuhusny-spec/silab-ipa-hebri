@@ -5,49 +5,60 @@
 
 ---
 
-## 🌟 Pembaruan Versi 2.0 (Desain Modern Sidebar & Keamanan Tingkat Tinggi)
+## 🌟 Pembaruan Versi 2.5 (Database Civitas, Import Excel, Discreet Admin & Pengetatan Aset)
 
-Aplikasi **SILAB-IPA** kini telah diperbarui secara menyeluruh sesuai kebutuhan terbaru:
+Aplikasi **SILAB-IPA** kini telah dilengkapi dengan fitur-fitur mutakhir sesuai kebutuhan operasional kampus:
 
-### 1. 📱 Tampilan Responsif (Laptop & HP Friendly)
-- **Menu Sidebar di Samping (Desktop/Laptop)**: Navigasi vertikal terstruktur dan bersih di sisi kiri, membedakan antara Portal Akses Mahasiswa & Dosen dengan Portal Khusus Pengelola Lab (Admin).
-- **Mobile Off-Canvas Drawer & Bottom Navigation Bar (Tampilan HP)**:
-  - Pada layar smartphone/tablet, sidebar otomatis menjadi drawer yang dapat dibuka/tutup via tombol menu hamburger (`☰`).
-  - Dilengkapi **Bottom Navigation Bar** di bagian bawah layar untuk akses satu jempol yang sangat cepat (*Beranda, Alat, Pinjam, Lacak, Admin*).
+### 1. 👥 Database Civitas Akademika (Mahasiswa & Dosen) & Auto-Fill Cepat
+- **Peminjaman 1-Klik Tanpa Mengetik Ulang**: Di formulir peminjaman, peminjam cukup memilih namanya dari menu dropdown cepat (`Pilih Mahasiswa / Dosen Terdaftar`).
+- Sistem seketika mengisi otomatis:
+  - Peran Peminjam (Mahasiswa / Dosen)
+  - Nama Lengkap & Gelar
+  - NIM / NIDN
+  - Program Studi (Tadris IPA)
+  - Semester / Jabatan
+  - Nomor WhatsApp Aktif
 
-### 2. 💫 Splash Screen dengan Animasi Bernapas (*Breathing Effect*)
-- Memuat logo resmi kampus **`yapnas.png`** di bagian atas dengan animasi bernapas dinamis (*breathing / pulsing glow*).
-- Menampilkan nama resmi **INSTITUT AGAMA ISLAM YAPNAS JENEPONTO** dan **FAKULTAS TARBIYYAH • JURUSAN TADRIS IPA**.
-- Alamat lengkap kampus di bagian bawah dengan tulisan kecil yang rapi dan elegan.
-- Indikator pemuatan otomatis dan tombol "*Masuk Langsung*".
+### 2. 📊 Input Data Civitas: Manual & Import File Excel / CSV
+- **Tambah Satu per Satu**: Form modal cepat untuk mendaftarkan dosen atau mahasiswa baru.
+- **Bulk Import Excel / CSV**: Mendukung file `.xlsx`, `.xls`, dan `.csv` secara offline menggunakan pustaka SheetJS lokal (`js/xlsx.full.min.js`).
+- **Pratinjau Data Langsung (*Live Preview Table*)**: Memverifikasi baris data sebelum disimpan ke database browser.
+- **Pilihan Mode Import**: *Gabungkan (Merge)* data baru atau *Gantikan (Replace)* seluruh database lama.
+- **Unduh Format Template Excel**: 1-klik unduh template spreadsheet resmi yang telah siap diisi kolomnya.
 
-### 3. 🛡️ Skema Peminjaman & Pengembalian yang Mudah tapi SANGAT AMAN (5 Pilar)
-1. **Pilar 1: Validasi Identitas & TTD Digital**: Peminjam terverifikasi via NIM/NIDN & WhatsApp, membubuhkan tanda tangan digital berkekuatan hukum internal.
-2. **Pilar 2: E-Tiket & QR Code Terenkode**: Nomor tiket unik terenkripsi dengan stempel tanggal dan QR Code anti-pemalsuan.
-3. **Pilar 3: Dual-Check Serah Terima**: Laboran dan peminjam bersama-sama menginspeksi kondisi fisik alat sebelum diserahkan di lab.
-4. **Pilar 4: Wajib Unggah Foto Bukti Pengembalian**: Peminjam wajib mengunggah foto fisik kebersihan & keutuhan alat sebelum diserahkan, menghindari klaim sepihak.
-5. **Pilar 5: Audit Fisik & Auto-Sync Stok**: Stok inventaris terkunci otomatis dan hanya pulih setelah diverifikasi tuntas oleh laboran.
+### 3. 🔒 Dashboard Admin Disembunyikan (*Discreet / Stealth Mode*)
+- **Akses Pengelola Tidak Mencolok**: Menu Admin dihilangkan dari sidebar publik dan bilah navigasi HP agar pengunjung dan mahasiswa fokus pada katalog dan peminjaman.
+- **Cara Masuk Pengelola Lab**:
+  1. Klik ikon gembok kecil yang samar (*discreet*) di bagian bawah sidebar footer.
+  2. Atau gunakan kombinasi tombol cepat: **`Ctrl + Shift + A`** (atau `Ctrl + Shift + L`).
+  3. Atau ketuk logo kampus pada sidebar 3 kali berturut-turut.
+- **Autentikasi Kuat Berbasis Email & Password**:
+  - Email: **`admin.lab@iaiyapnas.ac.id`**
+  - Password: **`Yapnas@LabIPA2026!`**
+  - Dilengkapi fitur intip password (*eye toggle*) dan tombol kemudahan "*Gunakan Akun Resmi Default*".
 
-### 4. 🔐 Pemisahan Dashboard Akses Umum vs Dashboard Admin
-- **Dashboard Akses Umum**: Untuk mahasiswa dan dosen melihat katalog alat, fasilitas, bahan kimia, pengajuan peminjaman, pelacakan tiket, SOP, dan K3.
-- **Dashboard Khusus Admin / Laboran**:
-  - Diproteksi modal login PIN (Default PIN: **`1234`** atau sandi **`admin`** / **`laboran`**).
-  - Profil Laboran Resmi: **Ahmad Fadhlillah, S.Si.** (Pranata Laboratorium).
-  - **Kelola Inventaris & Edit Gambar**: Admin dapat mengubah Nama, Kode, Merk, Ukuran, Buatan, Stok, Status, serta **mengunggah atau mengganti foto alat** langsung dari file komputer/HP peminjam.
-  - **Antrean Persetujuan (Approval Queue)**: Menyetujui atau menolak peminjaman masuk.
-  - **Validasi Foto Pengembalian**: Memeriksa foto bukti fisik alat saat dikembalikan oleh peminjam.
-  - **Ekspor Data CSV & Reset Data Bawaan**.
+### 4. 🛠️ Fitur Edit & Hapus Inventaris Lengkap
+- Admin dapat mengedit data dan mengganti foto untuk seluruh item:
+  - **Alat Laboratorium** (Kode, Nama, Merk, Ukuran, Buatan, Kategori, Stok, Status, Foto)
+  - **Fasilitas Umum** (Kode, Nama, Lokasi, Stok, Status)
+  - **Bahan Kimia** (Nama, Rumus Kimia, Satuan, Lokasi Simpan, Jenis Bahan, Stok)
+- Tab filter kategori praktis: *Semua*, *Alat Lab*, *Fasilitas*, *Bahan Kimia*.
+
+### 5. ⚖️ Pengetatan SOP Aset & Berita Acara Kerusakan (BAP Ganti Rugi)
+- Peminjaman dibuat mudah & nyaman, namun pengembalian diperketat demi menjaga aset milik negara/kampus:
+  - **Wajib Foto Bukti Pengembalian**: Menghindari perdebatan kondisi fisik alat.
+  - **Pemeriksaan Kondisi**:
+    - 🟢 *Baik, Bersih & Lengkap* -> Stok otomatis pulih ke katalog.
+    - 🔴 *Pecah / Kerusakan Fisik* -> Status ditandai *Klaim Ganti Rugi*, stok tidak dipulihkan.
+  - **Penerbitan Surat Resmi Berita Acara Kerusakan (BAP)**: Berkepala surat resmi IAI YAPNAS JENEPONTO, memuat kewajiban peminjam mengganti alat setara dalam waktu maksimal **7 (tujuh) hari kerja**.
+  - **Integrasi Peringatan Resmi WhatsApp**: Mengirim pesan teguran resmi otomatis ke WhatsApp peminjam dengan format baku laboratorium.
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🚀 Akses & Tautan
 
-1. **Jalankan via Script Langsung**:
-   - Cukup klik ganda file [`run_silab.bat`](file:///C:/Users/AsusV16/.gemini/antigravity-ide/scratch/silab-tadris-ipa/run_silab.bat).
-   - Browser akan otomatis terbuka ke alamat: `http://localhost:5173`.
-
-2. **Atau Buka Langsung File HTML**:
-   - Anda juga dapat langsung membuka file [`index.html`](file:///C:/Users/AsusV16/.gemini/antigravity-ide/scratch/silab-tadris-ipa/index.html) di browser Google Chrome atau Microsoft Edge di Laptop maupun HP.
+- **Live URL (Vercel)**: `https://silab-ipa-hebri.vercel.app/`
+- **Repository GitHub**: `https://github.com/ibnuhusny-spec/silab-ipa-hebri`
 
 ---
 
@@ -62,13 +73,15 @@ silab-tadris-ipa/
 │   ├── glassware.jpg       # Foto Set Alat Gelas & Buret Titrasi
 │   └── fumehood.jpg        # Foto Fasilitas Lemari Asam
 ├── css/
-│   └── style.css           # Desain modern, sidebar layout, mobile bottom nav, splash screen
+│   └── style.css           # Desain modern, sidebar layout, mobile nav, discreet admin, excel dropzone
 ├── js/
-│   ├── data.js             # Data master kampus, K3, skema keamanan 5 pilar, inventaris
+│   ├── data.js             # Data master kampus, inventaris, default members civitas, kredensial admin
+│   ├── xlsx.full.min.js    # SheetJS local library untuk parsing & download Excel/CSV
 │   ├── qrcode.min.js       # Generator QR Code digital
-│   └── app.js              # State management, sidebar nav, admin auth, upload foto, edit gambar
-├── index.html              # Antarmuka web responsif utama
+│   └── app.js              # State management, quick-select civitas, import excel, audit BAP
+├── index.html              # Antarmuka web responsif utama & print sheets
 ├── server.js               # Server lokal mandiri (port 5173)
 ├── run_silab.bat           # Shortcut peluncuran aplikasi satu klik
 └── README.md               # Dokumentasi lengkap
 ```
+

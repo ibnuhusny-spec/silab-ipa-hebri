@@ -127,15 +127,15 @@
           </ul>
         </div>
 
-        <!-- Group 2: Khusus Pengelola / Admin -->
-        <div>
+        <!-- Group 2: Khusus Pengelola / Admin (Disembunyikan dari Publik, hanya tampil saat admin login) -->
+        <div id="sidebarAdminGroup" style="display: none;">
           <div class="nav-group-title">Akses Khusus Pengelola</div>
           <ul class="sidebar-menu-list">
             <li>
               <a class="sidebar-menu-item admin-link" data-tab="tab-admin" onclick="triggerAdminAccess()">
                 <i class="fa-solid fa-user-shield"></i>
                 <span>Dashboard Admin</span>
-                <span id="adminPendingBadge" style="margin-left: auto; font-size: 0.7rem; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 1px 6px; border-radius: 99px;">Privat</span>
+                <span id="adminPendingBadge" style="margin-left: auto; font-size: 0.7rem; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 1px 6px; border-radius: 99px;">Aktif</span>
               </a>
             </li>
           </ul>
@@ -150,11 +150,17 @@
             <span style="width: 8px; height: 8px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
             <span>08.00 - 16.30 WITA</span>
           </div>
-          <button class="btn-icon" id="themeToggleBtn" title="Ganti Tema">
-            <i class="fa-solid fa-moon" id="themeIcon"></i>
-          </button>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn-icon" id="themeToggleBtn" title="Ganti Tema">
+              <i class="fa-solid fa-moon" id="themeIcon"></i>
+            </button>
+            <!-- Discreet Lock Icon: Akses Pengelola Lab (Tidak mencolok, rahasia/discreet) -->
+            <button class="btn-icon discreet-admin-lock" id="discreetAdminLockBtn" onclick="triggerAdminAccess()" title="Akses Pengelola Lab (Ctrl+Shift+A)" aria-label="Akses Pengelola">
+              <i class="fa-solid fa-lock"></i>
+            </button>
+          </div>
         </div>
-        <div class="sidebar-copy">
+        <div class="sidebar-copy" id="sidebarCopyText">
           IAI YAPNAS Jeneponto © 2026<br>
           <span style="font-size: 0.65rem; color: var(--text-dim);">Tamalatea, Kab. Jeneponto</span>
         </div>
@@ -178,10 +184,10 @@
         </div>
 
         <div class="top-bar-actions">
-          <!-- Role status pill -->
-          <div id="topRoleIndicator" class="btn btn-outline btn-sm" style="font-size: 0.78rem;" onclick="triggerAdminAccess()">
-            <i class="fa-solid fa-user-graduate" id="topRoleIcon" style="color: #38bdf8;"></i>
-            <span id="topRoleText">Akses: Mahasiswa / Dosen</span>
+          <!-- Role status pill (Mode Publik vs Mode Admin) -->
+          <div id="topRoleIndicator" class="btn btn-outline btn-sm" style="font-size: 0.78rem;">
+            <i class="fa-solid fa-graduation-cap" id="topRoleIcon" style="color: #38bdf8;"></i>
+            <span id="topRoleText">Portal Akademik Lab</span>
           </div>
 
           <!-- Quick Cart -->
@@ -444,6 +450,27 @@
             <div class="loan-form-card">
               <form id="loanForm" onsubmit="submitLoanApplication(event)">
                 
+                <!-- Quick Selection dari Database Mahasiswa & Dosen (Auto-fill Identity) -->
+                <div class="member-select-card">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="memberQuickSelect" style="font-size: 0.85rem; font-weight: 700; margin: 0; color: #10b981; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-address-book"></i> Pilih Mahasiswa / Dosen Terdaftar (Otomatis Isi)
+                    </label>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                      <i class="fa-solid fa-bolt"></i> 1-Klik Langsung Isi
+                    </span>
+                  </div>
+                  <select id="memberQuickSelect" class="form-control" onchange="handleMemberSelectChange(this.value)">
+                    <option value="">-- Ketik / Pilih Nama atau NIM/NIDN Civitas --</option>
+                  </select>
+                  <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>💡 Memilih nama otomatis mengisi Peran, NIM, dan No. HP di bawah.</span>
+                    <button type="button" onclick="resetMemberQuickSelect()" style="font-size: 0.74rem; color: #38bdf8; background: none; border: none; cursor: pointer; text-decoration: underline;">
+                      <i class="fa-solid fa-rotate-left"></i> Bersihkan Isian
+                    </button>
+                  </div>
+                </div>
+
                 <label style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; display: block;">Peran Peminjam <span class="req">*</span></label>
                 <div class="form-role-selector">
                   <div class="role-radio-card active" id="roleMhsCard" onclick="selectFormRole('Mahasiswa')">
@@ -648,21 +675,27 @@
             <!-- Admin Sub-navigation Tabs -->
             <div class="admin-tabs-nav">
               <button class="admin-tab-btn active" id="btnAdminTabManage" onclick="switchAdminSubTab('admin-tab-manage')">
-                <i class="fa-solid fa-boxes-stacked"></i> Kelola Inventaris & Edit Gambar
+                <i class="fa-solid fa-boxes-stacked"></i> Kelola Inventaris & Edit
+              </button>
+              <button class="admin-tab-btn" id="btnAdminTabMembers" onclick="switchAdminSubTab('admin-tab-members')">
+                <i class="fa-solid fa-users-gear"></i> Database Civitas (Mhs & Dosen)
               </button>
               <button class="admin-tab-btn" id="btnAdminTabApproval" onclick="switchAdminSubTab('admin-tab-approval')">
-                <i class="fa-solid fa-inbox"></i> Antrean Verifikasi Pinjaman
+                <i class="fa-solid fa-inbox"></i> Antrean Pinjaman
               </button>
               <button class="admin-tab-btn" id="btnAdminTabReturns" onclick="switchAdminSubTab('admin-tab-returns')">
-                <i class="fa-solid fa-clipboard-check"></i> Validasi Foto Pengembalian
+                <i class="fa-solid fa-clipboard-check"></i> Validasi Pengembalian & BAP
               </button>
             </div>
 
             <!-- SUB-TAB 1: KELOLA INVENTARIS & EDIT GAMBAR -->
             <div id="admin-tab-manage" class="admin-sub-view">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                <div style="font-size: 0.95rem; font-weight: 700;">
-                  Daftar Alat Laboratorium (<span id="adminAlatCount">0</span> Item)
+                <div class="filter-btn-group" id="adminInvCategoryFilter">
+                  <button class="btn btn-sm btn-outline active" onclick="filterAdminInventoryCategory('ALL', this)">Semua (<span id="adminAllCount">0</span>)</button>
+                  <button class="btn btn-sm btn-outline" onclick="filterAdminInventoryCategory('ALAT', this)">Alat Lab (<span id="adminAlatCount">0</span>)</button>
+                  <button class="btn btn-sm btn-outline" onclick="filterAdminInventoryCategory('FASILITAS', this)">Fasilitas (<span id="adminFasilitasCount">0</span>)</button>
+                  <button class="btn btn-sm btn-outline" onclick="filterAdminInventoryCategory('BAHAN', this)">Bahan Kimia (<span id="adminBahanCount">0</span>)</button>
                 </div>
                 <div style="display: flex; gap: 8px;">
                   <input type="text" id="adminSearchItemInput" class="form-control" style="width: 240px; padding: 6px 12px; font-size: 0.85rem;" placeholder="Cari nama / kode barang..." oninput="renderAdminInventoryTable()">
@@ -673,13 +706,13 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th style="width: 70px;">Gambar</th>
+                      <th style="width: 65px;">Gambar</th>
                       <th>Kode</th>
-                      <th>Nama Barang / Alat</th>
-                      <th>Merk & Buatan</th>
+                      <th>Nama Barang / Bahan</th>
+                      <th>Merk / Spesifikasi</th>
                       <th>Stok (Tersedia/Total)</th>
                       <th>Status</th>
-                      <th>Aksi Admin</th>
+                      <th style="text-align: center; width: 140px;">Aksi Admin</th>
                     </tr>
                   </thead>
                   <tbody id="adminInventoryTableBody">
@@ -689,7 +722,67 @@
               </div>
             </div>
 
-            <!-- SUB-TAB 2: ANTREAN PERSETUJUAN PINJAMAN -->
+            <!-- SUB-TAB 2: DATABASE CIVITAS (MAHASISWA & DOSEN) -->
+            <div id="admin-tab-members" class="admin-sub-view" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-users" style="color: #10b981;"></i> Database Civitas Mahasiswa & Dosen
+                  </div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">
+                    Data identitas otomatis digunakan di Form Peminjaman agar mahasiswa/dosen tidak perlu mengetik nama lagi.
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="openAddMemberModal()">
+                    <i class="fa-solid fa-user-plus"></i> Tambah Satu Data
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="openImportExcelModal()">
+                    <i class="fa-solid fa-file-excel"></i> Import File Excel
+                  </button>
+                  <button class="btn btn-outline btn-sm" onclick="downloadMemberTemplate()">
+                    <i class="fa-solid fa-download"></i> Unduh Format Excel
+                  </button>
+                </div>
+              </div>
+
+              <!-- Search and Filter Bar -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div class="filter-btn-group" id="memberRoleFilterGroup">
+                  <button class="btn btn-sm btn-outline active" onclick="filterMemberRole('ALL', this)">Semua (<span id="memberCountAll">0</span>)</button>
+                  <button class="btn btn-sm btn-outline" onclick="filterMemberRole('Mahasiswa', this)">Mahasiswa (<span id="memberCountMhs">0</span>)</button>
+                  <button class="btn btn-sm btn-outline" onclick="filterMemberRole('Dosen', this)">Dosen (<span id="memberCountDosen">0</span>)</button>
+                </div>
+                <div style="position: relative; width: 280px;">
+                  <input type="text" id="memberSearchInput" class="form-control" placeholder="Cari nama, NIM, atau NIDN..." oninput="renderMembersTable()" style="padding-left: 32px; font-size: 0.85rem;">
+                  <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.8rem;"></i>
+                </div>
+              </div>
+
+              <!-- Members Table -->
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 45px;">No</th>
+                      <th>Peran</th>
+                      <th>Nama Lengkap</th>
+                      <th>NIM / NIDN</th>
+                      <th>Semester / Jabatan</th>
+                      <th>No. WhatsApp</th>
+                      <th>Email</th>
+                      <th style="text-align: center; width: 130px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="membersTableBody">
+                    <!-- Rendered dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 3: ANTREAN PERSETUJUAN PINJAMAN -->
             <div id="admin-tab-approval" class="admin-sub-view" style="display: none;">
               <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;">
                 Pengajuan Peminjaman Menunggu Approval Laboran
@@ -712,10 +805,10 @@
               </div>
             </div>
 
-            <!-- SUB-TAB 3: VALIDASI PENGEMBALIAN & AUDIT FOTO -->
+            <!-- SUB-TAB 4: VALIDASI PENGEMBALIAN & AUDIT FOTO -->
             <div id="admin-tab-returns" class="admin-sub-view" style="display: none;">
               <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;">
-                Pemeriksaan Foto Bukti Pengembalian & Kondisi Fisik Alat
+                Pemeriksaan Foto Bukti Pengembalian & Penanganan Kerusakan Aset
               </div>
               <div class="table-responsive">
                 <table class="data-table">
@@ -727,6 +820,7 @@
                       <th>Foto Bukti</th>
                       <th>Kondisi & Catatan</th>
                       <th>Status Akhir</th>
+                      <th style="text-align: center;">Tindakan / BAP</th>
                     </tr>
                   </thead>
                   <tbody id="adminReturnsTableBody"></tbody>
@@ -764,34 +858,61 @@
       <i class="fa-solid fa-clock-rotate-left"></i>
       <span>Lacak</span>
     </button>
-    <button class="mobile-nav-btn" data-tab="tab-admin" onclick="triggerAdminAccess()">
+    <!-- Hidden by default, only shown if admin is logged in -->
+    <button class="mobile-nav-btn" id="mobileAdminNavBtn" data-tab="tab-admin" onclick="triggerAdminAccess()" style="display: none;">
       <i class="fa-solid fa-user-shield"></i>
       <span>Admin</span>
     </button>
   </nav>
 
   <!-- ======================================================================
-       MODAL: LOGIN PIN KHUSUS ADMIN LABORAN
+       MODAL: LOGIN AUTENTIKASI PENGELOLA LAB (EMAIL + STRONG PASSWORD)
        ====================================================================== -->
   <div class="modal-backdrop" id="adminLoginModal">
-    <div class="modal-dialog" style="max-width: 420px; text-align: center;">
+    <div class="modal-dialog" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 style="color: #f59e0b;"><i class="fa-solid fa-lock"></i> Autentikasi Pengelola Lab</h3>
+        <h3 style="color: #10b981;"><i class="fa-solid fa-shield-halved"></i> Portal Pengelola Laboratorium</h3>
         <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">
-          Masukkan PIN atau Sandi Laboran untuk mengakses Dashboard Khusus Manajemen Inventaris.
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          Akses terbatas khusus Kepala Laboratorium & Pranata Laboratorium Tadris IPA IAI YAPNAS Jeneponto.
         </p>
         <form onsubmit="handleAdminLogin(event)">
           <div class="form-group">
-            <input type="password" id="adminPinInput" class="form-control" placeholder="Masukkan PIN (Default: 1234)" style="text-align: center; font-size: 1.3rem; letter-spacing: 0.25em; font-family: var(--font-mono);" required autofocus>
+            <label for="adminEmailInput" style="font-size: 0.82rem; font-weight: 600;">Email Akun Pengelola <span class="req">*</span></label>
+            <div style="position: relative;">
+              <input type="email" id="adminEmailInput" class="form-control" placeholder="admin.lab@iaiyapnas.ac.id" required autofocus style="padding-left: 36px;">
+              <i class="fa-solid fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+            </div>
           </div>
-          <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 16px;">
-            <i class="fa-solid fa-info-circle"></i> Petunjuk Default PIN: <strong>1234</strong> atau sandi <strong>admin</strong>
+
+          <div class="form-group">
+            <label for="adminPasswordInput" style="font-size: 0.82rem; font-weight: 600;">Password Pengelola <span class="req">*</span></label>
+            <div class="password-field-wrap">
+              <input type="password" id="adminPasswordInput" class="form-control" placeholder="Masukkan password kuat..." required style="padding-left: 36px; padding-right: 42px;">
+              <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+              <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('adminPasswordInput', this)" title="Lihat/Sembunyikan Password">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
           </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 16px; font-size: 0.78rem;">
+            <div style="color: #10b981; font-weight: 700; margin-bottom: 4px;">
+              <i class="fa-solid fa-circle-info"></i> Akun Pengelola Resmi Default:
+            </div>
+            <div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all;">
+              Email: <strong>admin.lab@iaiyapnas.ac.id</strong><br>
+              Password: <strong>Yapnas@LabIPA2026!</strong>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top: 8px; width: 100%; font-size: 0.74rem; padding: 4px 8px;" onclick="fillDefaultAdminCredentials()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Akun Resmi Default
+            </button>
+          </div>
+
           <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;">
-            <i class="fa-solid fa-key"></i> Buka Dashboard Admin
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Dashboard Pengelola
           </button>
         </form>
       </div>
@@ -1124,6 +1245,244 @@
   </div>
 
   <!-- ======================================================================
+       MODAL: TAMBAH SATU DATA CIVITAS (MAHASISWA / DOSEN)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="addMemberModal">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus" style="color: #10b981;"></i> Tambah Civitas Akademika Baru</h3>
+        <button class="modal-close" onclick="closeModal('addMemberModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="newMemberForm" onsubmit="saveNewMember(event)">
+          <div class="form-group">
+            <label for="memberPeran">Peran / Status Civitas <span class="req">*</span></label>
+            <select id="memberPeran" class="form-control" onchange="toggleMemberRoleFields()" required>
+              <option value="Mahasiswa">Mahasiswa Tadris IPA</option>
+              <option value="Dosen">Dosen / Peneliti</option>
+            </select>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="memberNama">Nama Lengkap & Gelar <span class="req">*</span></label>
+              <input type="text" id="memberNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir / Dr. ..." required>
+            </div>
+            <div class="form-group">
+              <label for="memberNomorInduk" id="labelMemberNomorInduk">NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
+              <input type="text" id="memberNomorInduk" class="form-control" placeholder="Contoh: 2320401005" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="memberJurusan">Program Studi</label>
+              <input type="text" id="memberJurusan" class="form-control" value="Tadris IPA" required>
+            </div>
+            <div class="form-group">
+              <label for="memberSemester" id="labelMemberSemester">Semester / Jabatan <span class="req">*</span></label>
+              <input type="text" id="memberSemester" class="form-control" placeholder="Contoh: Semester 5 / Dosen Pengampu" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="memberTelepon">No. WhatsApp Aktif <span class="req">*</span></label>
+              <input type="tel" id="memberTelepon" class="form-control" placeholder="Contoh: 081244556677" required>
+            </div>
+            <div class="form-group">
+              <label for="memberEmail">Alamat Email Kampus</label>
+              <input type="email" id="memberEmail" class="form-control" placeholder="nama@iaiyapnas.ac.id">
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 12px 0 0; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('addMemberModal')">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Simpan ke Database
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: EDIT DATA CIVITAS (MAHASISWA / DOSEN)
+       ====================================================================== -->
+  <div class="modal-backdrop" id="editMemberModal">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-pen" style="color: #10b981;"></i> Edit Data Civitas Akademika</h3>
+        <button class="modal-close" onclick="closeModal('editMemberModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editMemberForm" onsubmit="saveEditedMember(event)">
+          <input type="hidden" id="editMemberId">
+          <div class="form-group">
+            <label for="editMemberPeran">Peran / Status Civitas <span class="req">*</span></label>
+            <select id="editMemberPeran" class="form-control" required>
+              <option value="Mahasiswa">Mahasiswa Tadris IPA</option>
+              <option value="Dosen">Dosen / Peneliti</option>
+            </select>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editMemberNama">Nama Lengkap & Gelar <span class="req">*</span></label>
+              <input type="text" id="editMemberNama" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="editMemberNomorInduk">NIM / NIDN <span class="req">*</span></label>
+              <input type="text" id="editMemberNomorInduk" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editMemberJurusan">Program Studi</label>
+              <input type="text" id="editMemberJurusan" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="editMemberSemester">Semester / Jabatan <span class="req">*</span></label>
+              <input type="text" id="editMemberSemester" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="editMemberTelepon">No. WhatsApp <span class="req">*</span></label>
+              <input type="tel" id="editMemberTelepon" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="editMemberEmail">Alamat Email</label>
+              <input type="email" id="editMemberEmail" class="form-control">
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 12px 0 0; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editMemberModal')">Batal</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: IMPORT DATABASE CIVITAS DARI FILE EXCEL / CSV
+       ====================================================================== -->
+  <div class="modal-backdrop" id="importExcelModal">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Import Mahasiswa & Dosen dari Excel</h3>
+        <button class="modal-close" onclick="closeModal('importExcelModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">
+          Unggah berkas spreadsheet (<strong>.xlsx, .xls, atau .csv</strong>) yang berisi daftar mahasiswa dan dosen. Sistem otomatis memetakan kolom Nama, NIM/NIDN, Semester, No. WhatsApp, dan Email.
+        </p>
+
+        <!-- Dropzone File Upload -->
+        <div class="excel-dropzone" id="excelDropZone" onclick="document.getElementById('excelFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.8rem; color: #10b981; margin-bottom: 8px;"></i>
+          <p style="font-size: 0.95rem; font-weight: 700; margin-bottom: 4px;">Tarik & Lepas File Excel di Sini atau Klik untuk Memilih</p>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Mendukung format Microsoft Excel (.xlsx, .xls) dan CSV (.csv)</span>
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileSelect(event)">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 0.76rem; color: var(--text-dim);">
+            Belum punya template format? 
+            <a href="javascript:void(0)" onclick="downloadMemberTemplate()" style="color: #10b981; text-decoration: underline; font-weight: 600;">Unduh Template Resmi Excel</a>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 0.76rem; color: var(--text-muted);">Mode Import:</label>
+            <select id="importModeSelect" class="form-control" style="font-size: 0.76rem; padding: 3px 8px; width: auto;">
+              <option value="MERGE">Gabungkan (Tambahkan Data)</option>
+              <option value="REPLACE">Gantikan Seluruh Data Lama</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Preview Box of Parsed Excel Rows -->
+        <div id="excelPreviewSection" style="display: none; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #10b981;">
+              <i class="fa-solid fa-list-check"></i> Pratinjau Data Ditemukan: <strong id="excelParsedCount">0</strong> Data
+            </span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Periksa pratinjau sebelum menyimpan</span>
+          </div>
+          <div class="table-responsive" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+            <table class="data-table" style="font-size: 0.78rem;">
+              <thead>
+                <tr>
+                  <th>Peran</th>
+                  <th>Nama Lengkap</th>
+                  <th>NIM / NIDN</th>
+                  <th>Prodi / Semester</th>
+                  <th>WhatsApp</th>
+                </tr>
+              </thead>
+              <tbody id="excelPreviewTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('importExcelModal')">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmImportExcel" onclick="saveImportedMembers()" disabled>
+          <i class="fa-solid fa-check-double"></i> Simpan Semua ke Database
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       MODAL: BERITA ACARA KERUSAKAN & PERNYATAAN GANTI RUGI ASET KAMPUS
+       ====================================================================== -->
+  <div class="modal-backdrop" id="damageClaimModal">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Berita Acara Kerusakan & Ganti Rugi Aset</h3>
+        <button class="modal-close" onclick="closeModal('damageClaimModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 0.82rem; color: #ef4444; font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">
+            <i class="fa-solid fa-shield-cat"></i> Protokol Perlindungan Aset Kampus IAI YAPNAS
+          </div>
+          <p style="font-size: 0.83rem; color: var(--text-main); margin: 0; line-height: 1.5;">
+            Berdasarkan Peraturan Tata Tertib Laboratorium Tadris IPA IAI YAPNAS Jeneponto, peminjam bertanggung jawab penuh atas alat yang pecah, rusak, atau komponen yang hilang. Penggantian wajib dipenuhi dalam jangka waktu maksimal <strong>7 (tujuh) hari kerja</strong>.
+          </p>
+        </div>
+
+        <div id="damageClaimDetailsCard" style="background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); font-size: 0.84rem; line-height: 1.6; margin-bottom: 16px;">
+          <!-- Injected dynamically -->
+        </div>
+
+        <div class="form-group">
+          <label for="damageClaimNotes" style="font-size: 0.82rem; font-weight: 700;">Instruksi Khusus / Ketentuan Penggantian Alat dari Laboran:</label>
+          <textarea id="damageClaimNotes" class="form-control" rows="2" style="font-size: 0.82rem;" placeholder="Contoh: Wajib mengganti dengan buret 50mL Pyrex original atau mikroskop dengan spesifikasi setara paling lambat 7 hari kerja..."></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="flex-wrap: wrap; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('damageClaimModal')">Tutup</button>
+        <button type="button" class="btn btn-outline" id="btnSendWaClaim" onclick="sendWhatsAppClaimWarning()">
+          <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Kirim Peringatan WA
+        </button>
+        <button type="button" class="btn btn-danger" onclick="printDamageClaimReceipt()">
+          <i class="fa-solid fa-print"></i> Cetak Berita Acara Ganti Rugi (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
        PRINT-ONLY SHEET: FORMAT RESMI SURAT PEMINJAMAN IAI YAPNAS JENEPONTO
        ====================================================================== -->
   <div class="print-only-sheet" id="printSheetArea">
@@ -1200,11 +1559,94 @@
     </div>
   </div>
 
+  <!-- ======================================================================
+       PRINT-ONLY SHEET: FORMAT RESMI BERITA ACARA KERUSAKAN & GANTI RUGI
+       ====================================================================== -->
+  <div class="print-only-sheet" id="printDamageSheetArea">
+    <div class="print-kop-surat">
+      <img src="yapnas.png" class="print-kop-logo" alt="Logo IAI YAPNAS">
+      <div class="print-kop-text">
+        <h2>INSTITUT AGAMA ISLAM YAPNAS JENEPONTO</h2>
+        <h3>FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
+        <p><strong>Laboratorium Terpadu (Fisika - Kimia - Biologi)</strong></p>
+        <p>Jl. Lanto Daeng Pasewang No. KM. 76, Cinong, Tonrokassi, Tamalatea, Jeneponto, Sulawesi Selatan 92351</p>
+      </div>
+    </div>
+
+    <div class="print-title" style="color: #b91c1c;">BERITA ACARA KERUSAKAN ASET & SURAT PERNYATAAN GANTI RUGI</div>
+    <div class="print-nomor-surat">Nomor Berita Acara: <span id="printBapNumber">BAP-LAB/2026/XXXX</span></div>
+
+    <p style="font-size: 9.5pt; text-align: justify; margin-bottom: 12px;">
+      Pada hari ini, yang bertanda tangan di bawah ini menerangkan bahwa telah dilakukan pemeriksaan pengembalian alat laboratorium dengan rincian data sebagai berikut:
+    </p>
+
+    <table style="width: 100%; font-size: 9.5pt; margin-bottom: 12px; border-collapse: collapse;">
+      <tr>
+        <td style="width: 25%; padding: 4px;"><strong>Nama Peminjam</strong></td>
+        <td style="width: 25%; padding: 4px;">: <span id="printBapBorrowerName">-</span></td>
+        <td style="width: 25%; padding: 4px;"><strong>Peran / Status</strong></td>
+        <td style="width: 25%; padding: 4px;">: <span id="printBapBorrowerRole">-</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>NIM / NIDN</strong></td>
+        <td style="padding: 4px;">: <span id="printBapBorrowerNim">-</span></td>
+        <td style="padding: 4px;"><strong>No. WhatsApp</strong></td>
+        <td style="padding: 4px;">: <span id="printBapBorrowerPhone">-</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Nomor Tiket Pinjam</strong></td>
+        <td style="padding: 4px;">: <span id="printBapTicketNum">-</span></td>
+        <td style="padding: 4px;"><strong>Mata Kuliah / Dosen</strong></td>
+        <td style="padding: 4px;">: <span id="printBapCourse">-</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 4px;"><strong>Kondisi Ditemukan</strong></td>
+        <td style="padding: 4px; color: #b91c1c; font-weight: bold;">: <span id="printBapCondition">-</span></td>
+        <td style="padding: 4px;"><strong>Tenggat Penggantian</strong></td>
+        <td style="padding: 4px; font-weight: bold;">: 7 (Tujuh) Hari Kerja</td>
+      </tr>
+    </table>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 8%;">No</th>
+          <th style="width: 22%;">Kode Alat</th>
+          <th style="width: 45%;">Nama Alat / Fasilitas yang Rusak</th>
+          <th style="width: 25%;">Spesifikasi / Merk</th>
+        </tr>
+      </thead>
+      <tbody id="printBapItemsBody"></tbody>
+    </table>
+
+    <p style="font-size: 9.5pt; text-align: justify; margin-top: 14px;">
+      Peminjam menyatakan bersedia dan berjanji mengganti unit barang laboratorium yang mengalami kerusakan/pecah dengan spesifikasi dan kualitas yang sama dalam kurun waktu 7 hari kerja sejak surat ini diterbitkan.
+    </p>
+
+    <div class="print-signature-grid">
+      <div>
+        <p>Yang Membuat Pernyataan,</p>
+        <p><strong>Peminjam Yang Bertanggung Jawab,</strong></p>
+        <div class="print-sig-space" style="height: 60px;"></div>
+        <p><strong id="printBapSignerName">( ........................................ )</strong></p>
+      </div>
+
+      <div>
+        <p>Jeneponto, <span id="printBapDate"></span></p>
+        <p><strong>Laboran Lab Terpadu IPA,</strong></p>
+        <div class="print-sig-space" style="height: 60px;"></div>
+        <p><strong>Ahmad Fadhlillah, S.Si.</strong></p>
+        <p style="font-size: 8.5pt;">NIP. 19930418 201903 1 007</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Scripts -->
   <script src="js/qrcode.min.js"></script>
+  <script src="js/xlsx.full.min.js"></script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>

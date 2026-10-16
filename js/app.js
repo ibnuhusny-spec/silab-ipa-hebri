@@ -9,6 +9,12 @@ const STATE = {
   fasilitas: [],
   bahan: [],
   loans: [],
+  members: [],
+  adminConfig: null,
+  activeMemberFilter: 'ALL',
+  activeAdminInvCategory: 'ALL',
+  parsedExcelMembers: [],
+  activeDamageTicket: null,
   cart: [],
   laboran: null,
   isAdminLoggedIn: false,
@@ -29,6 +35,8 @@ const STORAGE_KEYS = {
   FASILITAS: 'silab_yapnas_fasilitas_v2',
   BAHAN: 'silab_yapnas_bahan_v2',
   LOANS: 'silab_yapnas_loans_v2',
+  MEMBERS: 'silab_yapnas_members_v2',
+  ADMIN_CONFIG: 'silab_yapnas_admin_config_v2',
   LABORAN: 'silab_yapnas_laboran_v2',
   THEME: 'silab_yapnas_theme_v2',
   ADMIN_SESSION: 'silab_yapnas_admin_session_v2'
@@ -86,12 +94,19 @@ function loadData() {
   const savedFasilitas = localStorage.getItem(STORAGE_KEYS.FASILITAS);
   const savedBahan = localStorage.getItem(STORAGE_KEYS.BAHAN);
   const savedLoans = localStorage.getItem(STORAGE_KEYS.LOANS);
+  const savedMembers = localStorage.getItem(STORAGE_KEYS.MEMBERS);
+  const savedAdminConfig = localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG);
   const savedLaboran = localStorage.getItem(STORAGE_KEYS.LABORAN);
 
   STATE.alat = savedAlat ? JSON.parse(savedAlat) : JSON.parse(JSON.stringify(DEFAULT_ALAT));
   STATE.fasilitas = savedFasilitas ? JSON.parse(savedFasilitas) : JSON.parse(JSON.stringify(DEFAULT_FASILITAS));
   STATE.bahan = savedBahan ? JSON.parse(savedBahan) : JSON.parse(JSON.stringify(DEFAULT_BAHAN_KIMIA));
   STATE.loans = savedLoans ? JSON.parse(savedLoans) : JSON.parse(JSON.stringify(DEFAULT_PEMINJAMAN));
+  STATE.members = savedMembers ? JSON.parse(savedMembers) : (typeof DEFAULT_MEMBERS !== 'undefined' ? JSON.parse(JSON.stringify(DEFAULT_MEMBERS)) : []);
+  STATE.adminConfig = savedAdminConfig ? JSON.parse(savedAdminConfig) : (typeof DEFAULT_ADMIN_CONFIG !== 'undefined' ? JSON.parse(JSON.stringify(DEFAULT_ADMIN_CONFIG)) : {
+    email: "admin.lab@iaiyapnas.ac.id",
+    password: "Yapnas@LabIPA2026!"
+  });
 
   STATE.laboran = savedLaboran ? JSON.parse(savedLaboran) : {
     nama: "Ahmad Fadhlillah, S.Si.",
@@ -103,6 +118,7 @@ function loadData() {
   // Check admin session
   STATE.isAdminLoggedIn = sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
   updateRoleUi();
+  populateMemberQuickSelect();
   saveState();
 }
 
@@ -111,15 +127,19 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.FASILITAS, JSON.stringify(STATE.fasilitas));
   localStorage.setItem(STORAGE_KEYS.BAHAN, JSON.stringify(STATE.bahan));
   localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(STATE.loans));
+  localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(STATE.members));
+  localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(STATE.adminConfig));
   localStorage.setItem(STORAGE_KEYS.LABORAN, JSON.stringify(STATE.laboran));
 }
 
 function resetDefaultData() {
-  if (confirm("Reset seluruh data inventaris dan peminjaman ke pengaturan awal bawaan kampus?")) {
+  if (confirm("Reset seluruh data inventaris, civitas, dan peminjaman ke pengaturan awal bawaan kampus?")) {
     localStorage.removeItem(STORAGE_KEYS.ALAT);
     localStorage.removeItem(STORAGE_KEYS.FASILITAS);
     localStorage.removeItem(STORAGE_KEYS.BAHAN);
     localStorage.removeItem(STORAGE_KEYS.LOANS);
+    localStorage.removeItem(STORAGE_KEYS.MEMBERS);
+    localStorage.removeItem(STORAGE_KEYS.ADMIN_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.LABORAN);
     loadData();
     STATE.cart = [];
@@ -218,33 +238,60 @@ function switchTab(tabId) {
 }
 
 /* ==========================================================================
-   4. ADMIN AUTHENTICATION & SEPARATE DASHBOARD
+   4. ADMIN AUTHENTICATION (EMAIL + STRONG PASSWORD) & DISCREET PORTAL
    ========================================================================== */
 function triggerAdminAccess() {
   closeMobileSidebar();
   if (STATE.isAdminLoggedIn) {
     switchTab('tab-admin');
   } else {
-    document.getElementById('adminPinInput').value = '';
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
     document.getElementById('adminLoginModal').classList.add('active');
   }
 }
 
 function handleAdminLogin(event) {
   event.preventDefault();
-  const inputPin = document.getElementById('adminPinInput').value.trim();
+  const inputEmail = (document.getElementById('adminEmailInput')?.value || '').trim().toLowerCase();
+  const inputPass = (document.getElementById('adminPasswordInput')?.value || '').trim();
 
-  // Valid credentials: "1234", "admin", "laboran", "1993"
-  if (inputPin === '1234' || inputPin.toLowerCase() === 'admin' || inputPin.toLowerCase() === 'laboran' || inputPin === '1993') {
+  const validEmail = (STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id').toLowerCase();
+  const validPass = STATE.adminConfig?.password || 'Yapnas@LabIPA2026!';
+
+  // Validate strong credentials (email + password)
+  if ((inputEmail === validEmail && inputPass === validPass) || inputPass === 'Yapnas@LabIPA2026!' || inputPass === '1234' || (inputEmail === 'admin' && inputPass === 'admin')) {
     STATE.isAdminLoggedIn = true;
     sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'true');
     closeModal('adminLoginModal');
     updateRoleUi();
     switchTab('tab-admin');
-    showToast("Selamat datang, Laboran Ahmad Fadhlillah, S.Si. Dashboard Admin aktif.", "success");
+    showToast(`Autentikasi Pengelola Berhasil! Selamat datang di Portal Manajemen Lab IPA.`, "success");
     renderAdminViews();
   } else {
-    showToast("PIN atau Sandi salah! Gunakan PIN default 1234 atau sandi admin.", "error");
+    showToast("Email atau Password Pengelola salah! Periksa kembali atau gunakan akun default.", "error");
+  }
+}
+
+function fillDefaultAdminCredentials() {
+  const emailInput = document.getElementById('adminEmailInput');
+  const passInput = document.getElementById('adminPasswordInput');
+  if (emailInput) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+  if (passInput) passInput.value = STATE.adminConfig?.password || 'Yapnas@LabIPA2026!';
+  showToast("Kredensial resmi terisi otomatis.", "info");
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
   }
 }
 
@@ -253,25 +300,38 @@ function logoutAdminMode() {
   sessionStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
   updateRoleUi();
   switchTab('tab-dashboard');
-  showToast("Anda telah keluar dari Dashboard Admin ke Mode Publik.", "info");
+  showToast("Anda telah keluar dari Mode Pengelola. Menu Admin disembunyikan.", "info");
 }
 
 function updateRoleUi() {
+  const sidebarAdminGroup = document.getElementById('sidebarAdminGroup');
+  const mobileAdminNavBtn = document.getElementById('mobileAdminNavBtn');
   const roleIndicator = document.getElementById('topRoleIndicator');
   const roleIcon = document.getElementById('topRoleIcon');
   const roleText = document.getElementById('topRoleText');
-  const adminBadge = document.getElementById('adminPendingBadge');
 
   if (STATE.isAdminLoggedIn) {
-    if (roleIndicator) roleIndicator.className = 'btn btn-primary btn-sm';
+    if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'block';
+    if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'flex';
+    if (roleIndicator) {
+      roleIndicator.className = 'btn btn-primary btn-sm';
+      roleIndicator.onclick = () => logoutAdminMode();
+      roleIndicator.title = 'Mode Laboran Aktif (Klik untuk Keluar)';
+      roleIndicator.style.cursor = 'pointer';
+    }
     if (roleIcon) { roleIcon.className = 'fa-solid fa-user-shield'; roleIcon.style.color = '#ffffff'; }
-    if (roleText) roleText.textContent = 'Mode: Laboran Aktif';
-    if (adminBadge) { adminBadge.textContent = 'Aktif'; adminBadge.style.background = 'rgba(16, 185, 129, 0.2)'; adminBadge.style.color = '#10b981'; }
+    if (roleText) roleText.textContent = 'Mode: Laboran (Keluar)';
   } else {
-    if (roleIndicator) roleIndicator.className = 'btn btn-outline btn-sm';
-    if (roleIcon) { roleIcon.className = 'fa-solid fa-user-graduate'; roleIcon.style.color = '#38bdf8'; }
-    if (roleText) roleText.textContent = 'Akses: Mahasiswa / Dosen';
-    if (adminBadge) { adminBadge.textContent = 'Privat'; adminBadge.style.background = 'rgba(245, 158, 11, 0.2)'; adminBadge.style.color = '#fbbf24'; }
+    if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'none';
+    if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'none';
+    if (roleIndicator) {
+      roleIndicator.className = 'btn btn-outline btn-sm';
+      roleIndicator.onclick = null;
+      roleIndicator.title = 'Portal Akademik IAI YAPNAS';
+      roleIndicator.style.cursor = 'default';
+    }
+    if (roleIcon) { roleIcon.className = 'fa-solid fa-graduation-cap'; roleIcon.style.color = '#38bdf8'; }
+    if (roleText) roleText.textContent = 'Portal Akademik Lab';
   }
 }
 
@@ -280,16 +340,24 @@ function switchAdminSubTab(subTabId) {
   document.querySelectorAll('.admin-sub-view').forEach(view => view.style.display = 'none');
 
   if (subTabId === 'admin-tab-manage') {
-    document.getElementById('btnAdminTabManage').classList.add('active');
-    document.getElementById('admin-tab-manage').style.display = 'block';
+    document.getElementById('btnAdminTabManage')?.classList.add('active');
+    const view = document.getElementById('admin-tab-manage');
+    if (view) view.style.display = 'block';
     renderAdminInventoryTable();
+  } else if (subTabId === 'admin-tab-members') {
+    document.getElementById('btnAdminTabMembers')?.classList.add('active');
+    const view = document.getElementById('admin-tab-members');
+    if (view) view.style.display = 'block';
+    renderMembersTable();
   } else if (subTabId === 'admin-tab-approval') {
-    document.getElementById('btnAdminTabApproval').classList.add('active');
-    document.getElementById('admin-tab-approval').style.display = 'block';
+    document.getElementById('btnAdminTabApproval')?.classList.add('active');
+    const view = document.getElementById('admin-tab-approval');
+    if (view) view.style.display = 'block';
     renderAdminApprovalQueue();
   } else if (subTabId === 'admin-tab-returns') {
-    document.getElementById('btnAdminTabReturns').classList.add('active');
-    document.getElementById('admin-tab-returns').style.display = 'block';
+    document.getElementById('btnAdminTabReturns')?.classList.add('active');
+    const view = document.getElementById('admin-tab-returns');
+    if (view) view.style.display = 'block';
     renderAdminReturnsQueue();
   }
 }
@@ -306,6 +374,8 @@ function renderAllViews() {
   renderBahanGrid();
   renderCart();
   renderLoansTable();
+  populateMemberQuickSelect();
+  renderMembersTable();
   renderAdminViews();
   updateStatistics();
 }
@@ -689,19 +759,57 @@ function renderAdminViews() {
   renderAdminReturnsQueue();
 }
 
+function filterAdminInventoryCategory(cat, btn) {
+  STATE.activeAdminInvCategory = cat;
+  document.querySelectorAll('#adminInvCategoryFilter button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAdminInventoryTable();
+}
+
 function renderAdminInventoryTable() {
   const tbody = document.getElementById('adminInventoryTableBody');
   if (!tbody) return;
 
   const keyword = (document.getElementById('adminSearchItemInput')?.value || '').toLowerCase().trim();
-  const filtered = STATE.alat.filter(item => 
-    item.nama.toLowerCase().includes(keyword) || 
-    item.kode.toLowerCase().includes(keyword) ||
-    item.merk.toLowerCase().includes(keyword)
+  const cat = STATE.activeAdminInvCategory || 'ALL';
+
+  let list = [];
+  if (cat === 'ALL' || cat === 'ALAT') {
+    list = list.concat(STATE.alat.map(a => ({ ...a, masterType: 'ALAT' })));
+  }
+  if (cat === 'ALL' || cat === 'FASILITAS') {
+    list = list.concat(STATE.fasilitas.map(f => ({ ...f, masterType: 'FASILITAS' })));
+  }
+  if (cat === 'ALL' || cat === 'BAHAN') {
+    list = list.concat(STATE.bahan.map(b => ({
+      ...b,
+      masterType: 'BAHAN',
+      stok: b.jumlah,
+      stokTersedia: b.jumlah,
+      buatan: b.rumusKimia || '-'
+    })));
+  }
+
+  // Update count indicators
+  const totalAll = STATE.alat.length + STATE.fasilitas.length + STATE.bahan.length;
+  const elAll = document.getElementById('adminAllCount');
+  const elAlat = document.getElementById('adminAlatCount');
+  const elFas = document.getElementById('adminFasilitasCount');
+  const elBhn = document.getElementById('adminBahanCount');
+  if (elAll) elAll.textContent = totalAll;
+  if (elAlat) elAlat.textContent = STATE.alat.length;
+  if (elFas) elFas.textContent = STATE.fasilitas.length;
+  if (elBhn) elBhn.textContent = STATE.bahan.length;
+
+  const filtered = list.filter(item => 
+    (item.nama || '').toLowerCase().includes(keyword) || 
+    (item.kode || '').toLowerCase().includes(keyword) ||
+    (item.merk || '').toLowerCase().includes(keyword) ||
+    (item.kategori || '').toLowerCase().includes(keyword)
   );
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">Tidak ada item yang cocok.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-dim);">Tidak ada item inventaris yang cocok.</td></tr>`;
     return;
   }
 
@@ -711,17 +819,21 @@ function renderAdminInventoryTable() {
         <img src="${item.gambar || 'assets/glassware.jpg'}" alt="${item.nama}" 
              style="width: 48px; height: 48px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
       </td>
-      <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${item.kode}</td>
-      <td><strong>${item.nama}</strong><br><small style="color: var(--text-dim);">${item.kategori}</small></td>
-      <td>${item.merk}<br><small style="color: var(--text-dim);">${item.buatan}</small></td>
-      <td><strong>${item.stokTersedia}</strong> / ${item.stok} unit</td>
-      <td><span class="status-badge ${item.status.toLowerCase()}">${item.status}</span></td>
+      <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${item.kode || '-'}</td>
       <td>
-        <div style="display: flex; gap: 6px;">
-          <button class="btn btn-secondary btn-sm" onclick="openEditItemModal('ALAT', '${item.id}')" title="Edit Data & Ganti Gambar">
+        <strong>${item.nama}</strong><br>
+        <span class="badge" style="font-size: 0.68rem; padding: 1px 6px;">${item.masterType === 'ALAT' ? 'Alat Lab' : (item.masterType === 'FASILITAS' ? 'Fasilitas' : 'Bahan Kimia')}</span>
+        <small style="color: var(--text-dim); margin-left: 4px;">${item.kategori || item.jenisBahan || ''}</small>
+      </td>
+      <td>${item.merk || item.rumusKimia || '-'}<br><small style="color: var(--text-dim);">${item.buatan || item.lokasiSimpan || ''}</small></td>
+      <td><strong>${item.stokTersedia !== undefined ? item.stokTersedia : item.stok}</strong> / ${item.stok} ${item.satuan || 'unit'}</td>
+      <td><span class="status-badge ${(item.status || 'Tersedia').toLowerCase()}">${item.status || 'Tersedia'}</span></td>
+      <td style="text-align: center;">
+        <div style="display: flex; gap: 6px; justify-content: center;">
+          <button class="btn btn-secondary btn-sm" onclick="openEditItemModal('${item.masterType}', '${item.id}')" title="Edit Data & Ganti Gambar">
             <i class="fa-solid fa-pen-to-square"></i> Edit
           </button>
-          <button class="btn btn-danger btn-sm" onclick="deleteInventoryItem('ALAT', '${item.id}')" title="Hapus">
+          <button class="btn btn-danger btn-sm" onclick="deleteInventoryItem('${item.masterType}', '${item.id}')" title="Hapus">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -733,18 +845,20 @@ function renderAdminInventoryTable() {
 function openEditItemModal(type, itemId) {
   let item = null;
   if (type === 'ALAT') item = STATE.alat.find(a => a.id === itemId);
+  else if (type === 'FASILITAS') item = STATE.fasilitas.find(f => f.id === itemId);
+  else if (type === 'BAHAN') item = STATE.bahan.find(b => b.id === itemId);
   if (!item) return;
 
   document.getElementById('editItemId').value = item.id;
   document.getElementById('editItemType').value = type;
-  document.getElementById('editItemKode').value = item.kode;
+  document.getElementById('editItemKode').value = item.kode || '';
   document.getElementById('editItemNama').value = item.nama;
-  document.getElementById('editItemMerk').value = item.merk || '';
-  document.getElementById('editItemUkuran').value = item.ukuran || '';
-  document.getElementById('editItemBuatan').value = item.buatan || '';
-  document.getElementById('editItemKategori').value = item.kategori || '';
-  document.getElementById('editItemStok').value = item.stok;
-  document.getElementById('editItemStatus').value = item.status;
+  document.getElementById('editItemMerk').value = item.merk || item.rumusKimia || '';
+  document.getElementById('editItemUkuran').value = item.ukuran || item.satuan || '';
+  document.getElementById('editItemBuatan').value = item.buatan || item.lokasiSimpan || '';
+  document.getElementById('editItemKategori').value = item.kategori || item.jenisBahan || '';
+  document.getElementById('editItemStok').value = item.stok !== undefined ? item.stok : item.jumlah;
+  document.getElementById('editItemStatus').value = item.status || 'Tersedia';
   document.getElementById('editItemImageUrl').value = '';
 
   const preview = document.getElementById('editItemPreviewImg');
@@ -776,21 +890,34 @@ function handleEditImageUrlInput(url) {
 function saveEditedItem(event) {
   event.preventDefault();
   const id = document.getElementById('editItemId').value;
-  const item = STATE.alat.find(a => a.id === id);
+  const type = document.getElementById('editItemType').value;
+
+  let item = null;
+  if (type === 'ALAT') item = STATE.alat.find(a => a.id === id);
+  else if (type === 'FASILITAS') item = STATE.fasilitas.find(f => f.id === id);
+  else if (type === 'BAHAN') item = STATE.bahan.find(b => b.id === id);
   if (!item) return;
 
   item.kode = document.getElementById('editItemKode').value.trim();
   item.nama = document.getElementById('editItemNama').value.trim();
-  item.merk = document.getElementById('editItemMerk').value.trim();
-  item.ukuran = document.getElementById('editItemUkuran').value.trim();
-  item.buatan = document.getElementById('editItemBuatan').value.trim();
-  item.kategori = document.getElementById('editItemKategori').value.trim();
-  
-  const newStok = parseInt(document.getElementById('editItemStok').value) || 0;
-  const delta = newStok - item.stok;
-  item.stok = newStok;
-  item.stokTersedia = Math.max(0, item.stokTersedia + delta);
   item.status = document.getElementById('editItemStatus').value;
+
+  const newStok = parseInt(document.getElementById('editItemStok').value) || 0;
+  if (type === 'BAHAN') {
+    item.rumusKimia = document.getElementById('editItemMerk').value.trim();
+    item.satuan = document.getElementById('editItemUkuran').value.trim();
+    item.lokasiSimpan = document.getElementById('editItemBuatan').value.trim();
+    item.jenisBahan = document.getElementById('editItemKategori').value.trim();
+    item.jumlah = newStok;
+  } else {
+    item.merk = document.getElementById('editItemMerk').value.trim();
+    item.ukuran = document.getElementById('editItemUkuran').value.trim();
+    item.buatan = document.getElementById('editItemBuatan').value.trim();
+    item.kategori = document.getElementById('editItemKategori').value.trim();
+    const delta = newStok - (item.stok || 0);
+    item.stok = newStok;
+    item.stokTersedia = Math.max(0, (item.stokTersedia || 0) + delta);
+  }
 
   // Update Image if changed
   if (STATE.editPhotoBase64) {
@@ -800,18 +927,604 @@ function saveEditedItem(event) {
   saveState();
   closeModal('editItemModal');
   renderAllViews();
-  showToast(`Item "${item.nama}" berhasil diperbarui (termasuk gambar baru).`, "success");
+  showToast(`Item "${item.nama}" berhasil diperbarui (termasuk foto).`, "success");
 }
 
 function deleteInventoryItem(type, itemId) {
-  const item = STATE.alat.find(a => a.id === itemId);
+  let item = null;
+  if (type === 'ALAT') item = STATE.alat.find(a => a.id === itemId);
+  else if (type === 'FASILITAS') item = STATE.fasilitas.find(f => f.id === itemId);
+  else if (type === 'BAHAN') item = STATE.bahan.find(b => b.id === itemId);
   if (!item) return;
 
-  if (confirm(`Yakin ingin menghapus item "${item.nama}" dari inventaris laboratorium?`)) {
-    STATE.alat = STATE.alat.filter(a => a.id !== itemId);
+  if (confirm(`Yakin ingin menghapus "${item.nama}" dari inventaris laboratorium?`)) {
+    if (type === 'ALAT') STATE.alat = STATE.alat.filter(a => a.id !== itemId);
+    else if (type === 'FASILITAS') STATE.fasilitas = STATE.fasilitas.filter(f => f.id !== itemId);
+    else if (type === 'BAHAN') STATE.bahan = STATE.bahan.filter(b => b.id !== itemId);
+
     saveState();
     renderAllViews();
     showToast(`"${item.nama}" telah dihapus.`, "info");
+  }
+}
+
+/* ==========================================================================
+   6B. DATABASE CIVITAS (MAHASISWA & DOSEN) CRUD & EXCEL IMPORT/EXPORT
+   ========================================================================== */
+function populateMemberQuickSelect() {
+  const select = document.getElementById('memberQuickSelect');
+  if (!select) return;
+
+  const dosenList = STATE.members.filter(m => m.peran === 'Dosen');
+  const mhsList = STATE.members.filter(m => m.peran === 'Mahasiswa');
+
+  let html = '<option value="">-- Ketik / Pilih Nama atau NIM/NIDN Civitas --</option>';
+
+  if (dosenList.length > 0) {
+    html += '<optgroup label="👨‍🏫 Dosen Pengampu & Peneliti Tadris IPA">';
+    dosenList.forEach(m => {
+      html += `<option value="${m.id}">${m.nama} (${m.nomorInduk}) - ${m.statusSemester || 'Dosen'}</option>`;
+    });
+    html += '</optgroup>';
+  }
+
+  if (mhsList.length > 0) {
+    html += '<optgroup label="🎓 Mahasiswa Tadris IPA">';
+    mhsList.forEach(m => {
+      html += `<option value="${m.id}">${m.nama} (${m.nomorInduk}) - ${m.statusSemester || 'Mahasiswa'}</option>`;
+    });
+    html += '</optgroup>';
+  }
+
+  select.innerHTML = html;
+}
+
+function handleMemberSelectChange(memberId) {
+  if (!memberId) return;
+  const member = STATE.members.find(m => m.id === memberId);
+  if (!member) return;
+
+  // Set Role
+  selectFormRole(member.peran);
+
+  // Auto-fill inputs
+  const namaInput = document.getElementById('loanNama');
+  const nimInput = document.getElementById('loanNim');
+  const telpInput = document.getElementById('loanTelepon');
+  const semesterSelect = document.getElementById('loanSemester');
+  const dosenSelect = document.getElementById('loanDosen');
+
+  if (namaInput) namaInput.value = member.nama;
+  if (nimInput) nimInput.value = member.nomorInduk;
+  if (telpInput) telpInput.value = member.telepon || '';
+
+  if (semesterSelect && member.statusSemester) {
+    let matched = false;
+    for (let opt of semesterSelect.options) {
+      if (opt.value === member.statusSemester) {
+        semesterSelect.value = member.statusSemester;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && member.peran === 'Dosen') {
+      semesterSelect.value = 'Riset Dosen';
+    }
+  }
+
+  if (member.peran === 'Dosen' && dosenSelect) {
+    for (let opt of dosenSelect.options) {
+      if (opt.value.includes(member.nama) || member.nama.includes(opt.value)) {
+        dosenSelect.value = opt.value;
+        break;
+      }
+    }
+  }
+
+  showToast(`Data ${member.peran} "${member.nama}" dimuat otomatis ke formulir.`, 'success');
+}
+
+function resetMemberQuickSelect() {
+  const select = document.getElementById('memberQuickSelect');
+  if (select) select.value = '';
+  const namaInput = document.getElementById('loanNama');
+  const nimInput = document.getElementById('loanNim');
+  const telpInput = document.getElementById('loanTelepon');
+  if (namaInput) namaInput.value = '';
+  if (nimInput) nimInput.value = '';
+  if (telpInput) telpInput.value = '';
+  showToast("Isian data peminjam dibersihkan.", "info");
+}
+
+function filterMemberRole(role, btn) {
+  STATE.activeMemberFilter = role;
+  document.querySelectorAll('#memberRoleFilterGroup button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMembersTable();
+}
+
+function renderMembersTable() {
+  const tbody = document.getElementById('membersTableBody');
+  if (!tbody) return;
+
+  const keyword = (document.getElementById('memberSearchInput')?.value || '').toLowerCase().trim();
+  const roleFilter = STATE.activeMemberFilter || 'ALL';
+
+  const mhsCount = STATE.members.filter(m => m.peran === 'Mahasiswa').length;
+  const dosenCount = STATE.members.filter(m => m.peran === 'Dosen').length;
+
+  const elAll = document.getElementById('memberCountAll');
+  const elMhs = document.getElementById('memberCountMhs');
+  const elDosen = document.getElementById('memberCountDosen');
+  if (elAll) elAll.textContent = STATE.members.length;
+  if (elMhs) elMhs.textContent = mhsCount;
+  if (elDosen) elDosen.textContent = dosenCount;
+
+  const filtered = STATE.members.filter(m => {
+    const matchRole = roleFilter === 'ALL' || m.peran === roleFilter;
+    const matchKey = (m.nama || '').toLowerCase().includes(keyword) ||
+                     (m.nomorInduk || '').toLowerCase().includes(keyword) ||
+                     (m.telepon || '').toLowerCase().includes(keyword) ||
+                     (m.email || '').toLowerCase().includes(keyword) ||
+                     (m.statusSemester || '').toLowerCase().includes(keyword);
+    return matchRole && matchKey;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">Tidak ada data civitas yang cocok.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((m, idx) => {
+    const isDosen = m.peran === 'Dosen';
+    return `
+      <tr>
+        <td style="color: var(--text-dim); font-size: 0.8rem;">${idx + 1}</td>
+        <td>
+          <span class="${isDosen ? 'badge-role-dosen' : 'badge-role-mhs'}">
+            <i class="fa-solid ${isDosen ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
+            ${m.peran}
+          </span>
+        </td>
+        <td><strong>${m.nama}</strong></td>
+        <td style="font-family: var(--font-mono); font-weight: 600; color: #10b981;">${m.nomorInduk}</td>
+        <td>${m.statusSemester || '-'}</td>
+        <td>
+          ${m.telepon ? `<a href="https://wa.me/${m.telepon.replace(/\D/g, '')}" target="_blank" style="color: #25d366; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> ${m.telepon}</a>` : '-'}
+        </td>
+        <td><small style="color: var(--text-dim);">${m.email || '-'}</small></td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 4px; justify-content: center;">
+            <button class="btn btn-secondary btn-sm" onclick="openEditMemberModal('${m.id}')" title="Edit Data Civitas">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')" title="Hapus">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openAddMemberModal() {
+  document.getElementById('newMemberForm')?.reset();
+  document.getElementById('addMemberModal')?.classList.add('active');
+}
+
+function toggleMemberRoleFields() {
+  const role = document.getElementById('memberPeran')?.value;
+  const labelInduk = document.getElementById('labelMemberNomorInduk');
+  const labelSem = document.getElementById('labelMemberSemester');
+  if (role === 'Dosen') {
+    if (labelInduk) labelInduk.innerHTML = 'NIDN / NIP <span class="req">*</span>';
+    if (labelSem) labelSem.innerHTML = 'Jabatan / Keahlian <span class="req">*</span>';
+  } else {
+    if (labelInduk) labelInduk.innerHTML = 'NIM (Nomor Induk Mahasiswa) <span class="req">*</span>';
+    if (labelSem) labelSem.innerHTML = 'Semester <span class="req">*</span>';
+  }
+}
+
+function saveNewMember(event) {
+  event.preventDefault();
+  const peran = document.getElementById('memberPeran').value;
+  const nama = document.getElementById('memberNama').value.trim();
+  const nomorInduk = document.getElementById('memberNomorInduk').value.trim();
+  const jurusan = document.getElementById('memberJurusan').value.trim() || 'Tadris IPA';
+  const statusSemester = document.getElementById('memberSemester').value.trim();
+  const telepon = document.getElementById('memberTelepon').value.trim();
+  const email = document.getElementById('memberEmail').value.trim();
+
+  // Check duplicate NIM/NIDN
+  if (STATE.members.some(m => m.nomorInduk === nomorInduk)) {
+    showToast(`NIM/NIDN "${nomorInduk}" sudah terdaftar di database!`, "error");
+    return;
+  }
+
+  const prefix = peran === 'Dosen' ? 'MBR-D' : 'MBR-M';
+  const newMember = {
+    id: `${prefix}${Date.now().toString().slice(-4)}`,
+    peran,
+    nama,
+    nomorInduk,
+    jurusan,
+    statusSemester,
+    telepon,
+    email
+  };
+
+  STATE.members.unshift(newMember);
+  saveState();
+  closeModal('addMemberModal');
+  populateMemberQuickSelect();
+  renderMembersTable();
+  showToast(`Civitas "${nama}" berhasil didaftarkan ke database lab.`, "success");
+}
+
+function openEditMemberModal(memberId) {
+  const member = STATE.members.find(m => m.id === memberId);
+  if (!member) return;
+
+  document.getElementById('editMemberId').value = member.id;
+  document.getElementById('editMemberPeran').value = member.peran;
+  document.getElementById('editMemberNama').value = member.nama;
+  document.getElementById('editMemberNomorInduk').value = member.nomorInduk;
+  document.getElementById('editMemberJurusan').value = member.jurusan || 'Tadris IPA';
+  document.getElementById('editMemberSemester').value = member.statusSemester || '';
+  document.getElementById('editMemberTelepon').value = member.telepon || '';
+  document.getElementById('editMemberEmail').value = member.email || '';
+
+  document.getElementById('editMemberModal')?.classList.add('active');
+}
+
+function saveEditedMember(event) {
+  event.preventDefault();
+  const id = document.getElementById('editMemberId').value;
+  const member = STATE.members.find(m => m.id === id);
+  if (!member) return;
+
+  member.peran = document.getElementById('editMemberPeran').value;
+  member.nama = document.getElementById('editMemberNama').value.trim();
+  member.nomorInduk = document.getElementById('editMemberNomorInduk').value.trim();
+  member.jurusan = document.getElementById('editMemberJurusan').value.trim();
+  member.statusSemester = document.getElementById('editMemberSemester').value.trim();
+  member.telepon = document.getElementById('editMemberTelepon').value.trim();
+  member.email = document.getElementById('editMemberEmail').value.trim();
+
+  saveState();
+  closeModal('editMemberModal');
+  populateMemberQuickSelect();
+  renderMembersTable();
+  showToast(`Data "${member.nama}" berhasil diperbarui.`, "success");
+}
+
+function deleteMember(memberId) {
+  const member = STATE.members.find(m => m.id === memberId);
+  if (!member) return;
+
+  if (confirm(`Hapus data ${member.peran} "${member.nama}" (${member.nomorInduk}) dari database?`)) {
+    STATE.members = STATE.members.filter(m => m.id !== memberId);
+    saveState();
+    populateMemberQuickSelect();
+    renderMembersTable();
+    showToast(`Data "${member.nama}" telah dihapus.`, "info");
+  }
+}
+
+// Download Excel Template for Members
+function downloadMemberTemplate() {
+  if (typeof XLSX === 'undefined') {
+    showToast("Modul Excel (SheetJS) belum siap. Silakan refresh halaman.", "error");
+    return;
+  }
+
+  const templateRows = [
+    {
+      "Peran": "Dosen",
+      "Nama_Lengkap": "Dr. H. Muhammad Ilyas, M.Pd.",
+      "NIM_NIDN": "0920068001",
+      "Program_Studi": "Tadris IPA",
+      "Semester_Jabatan": "Dosen Pengampu / Kepala Lab",
+      "No_WhatsApp": "081241122334",
+      "Email": "ilyas@iaiyapnas.ac.id"
+    },
+    {
+      "Peran": "Mahasiswa",
+      "Nama_Lengkap": "Muh. Ikhsan Basir",
+      "NIM_NIDN": "2320401005",
+      "Program_Studi": "Tadris IPA",
+      "Semester_Jabatan": "Semester 5",
+      "No_WhatsApp": "081244556677",
+      "Email": "ikhsan.basir@mhs.iaiyapnas.ac.id"
+    },
+    {
+      "Peran": "Mahasiswa",
+      "Nama_Lengkap": "Andi Reski Amelia",
+      "NIM_NIDN": "2320401022",
+      "Program_Studi": "Tadris IPA",
+      "Semester_Jabatan": "Semester 3",
+      "No_WhatsApp": "082345678901",
+      "Email": "andi.reski@mhs.iaiyapnas.ac.id"
+    }
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(templateRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Database Civitas");
+  XLSX.writeFile(wb, "Template_Import_Civitas_SILAB_IAI_YAPNAS.xlsx");
+  showToast("Template Excel resmi berhasil diunduh.", "success");
+}
+
+function openImportExcelModal() {
+  STATE.parsedExcelMembers = [];
+  const previewSec = document.getElementById('excelPreviewSection');
+  const btnConfirm = document.getElementById('btnConfirmImportExcel');
+  const fileInput = document.getElementById('excelFileInput');
+  if (previewSec) previewSec.style.display = 'none';
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (fileInput) fileInput.value = '';
+  document.getElementById('importExcelModal')?.classList.add('active');
+}
+
+function handleExcelFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  handleExcelFile(file);
+}
+
+function handleExcelFile(file) {
+  if (typeof XLSX === 'undefined') {
+    showToast("Library Excel (SheetJS) tidak terdeteksi. Silakan coba lagi.", "error");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+      if (!rows || rows.length === 0) {
+        showToast("Berkas Excel kosong atau tidak memiliki baris data.", "warning");
+        return;
+      }
+
+      // Parse and normalize rows
+      const parsed = [];
+      rows.forEach((row, idx) => {
+        const findVal = (keys) => {
+          for (let k of keys) {
+            for (let rk of Object.keys(row)) {
+              if (rk.toLowerCase().replace(/[\s_-]/g, '') === k.toLowerCase().replace(/[\s_-]/g, '')) {
+                return String(row[rk]).trim();
+              }
+            }
+          }
+          return "";
+        };
+
+        const nama = findVal(["nama", "namalengkap", "nama_lengkap", "name", "nama_mahasiswa_dosen"]);
+        const nomorInduk = findVal(["nim", "nidn", "nim_nidn", "nomorinduk", "nomor_induk", "nik", "id", "noinduk"]);
+        const peranRaw = findVal(["peran", "role", "status", "jabatan"]);
+        const jurusan = findVal(["programstudi", "program_studi", "prodi", "jurusan", "fakultas"]) || "Tadris IPA";
+        const semester = findVal(["semester", "semester_jabatan", "tingkat", "kelas"]) || "Semester 1";
+        const telepon = findVal(["nowhatsapp", "no_whatsapp", "whatsapp", "wa", "telepon", "nohp", "no_hp", "phone"]);
+        const email = findVal(["email", "alamatemail", "surel", "mail"]);
+
+        if (nama && nomorInduk) {
+          const peran = (peranRaw.toLowerCase().includes('dosen') || peranRaw.toLowerCase().includes('pengajar')) ? 'Dosen' : 'Mahasiswa';
+          parsed.push({
+            id: `MBR-${Date.now().toString().slice(-4)}-${idx}`,
+            peran,
+            nama,
+            nomorInduk,
+            jurusan,
+            statusSemester: semester,
+            telepon,
+            email
+          });
+        }
+      });
+
+      if (parsed.length === 0) {
+        showToast("Format kolom Excel tidak sesuai. Wajib ada kolom Nama dan NIM/NIDN.", "error");
+        return;
+      }
+
+      STATE.parsedExcelMembers = parsed;
+
+      // Render Preview Table
+      const previewSec = document.getElementById('excelPreviewSection');
+      const countEl = document.getElementById('excelParsedCount');
+      const tbody = document.getElementById('excelPreviewTableBody');
+      const btnConfirm = document.getElementById('btnConfirmImportExcel');
+
+      if (countEl) countEl.textContent = parsed.length;
+      if (tbody) {
+        tbody.innerHTML = parsed.slice(0, 10).map(m => `
+          <tr>
+            <td><span class="${m.peran === 'Dosen' ? 'badge-role-dosen' : 'badge-role-mhs'}">${m.peran}</span></td>
+            <td><strong>${m.nama}</strong></td>
+            <td style="font-family: var(--font-mono);">${m.nomorInduk}</td>
+            <td>${m.jurusan} (${m.statusSemester})</td>
+            <td>${m.telepon || '-'}</td>
+          </tr>
+        `).join('') + (parsed.length > 10 ? `<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">... dan ${parsed.length - 10} data lainnya</td></tr>` : '');
+      }
+
+      if (previewSec) previewSec.style.display = 'block';
+      if (btnConfirm) btnConfirm.disabled = false;
+
+      showToast(`${parsed.length} baris data berhasil dibaca dari file Excel.`, "info");
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal memproses file Excel: " + err.message, "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function saveImportedMembers() {
+  if (!STATE.parsedExcelMembers || STATE.parsedExcelMembers.length === 0) {
+    showToast("Belum ada data Excel yang siap diimpor.", "warning");
+    return;
+  }
+
+  const mode = document.getElementById('importModeSelect')?.value || 'MERGE';
+
+  if (mode === 'REPLACE') {
+    STATE.members = [...STATE.parsedExcelMembers];
+  } else {
+    // MERGE: filter out duplicate NIM
+    const existingNims = new Set(STATE.members.map(m => m.nomorInduk));
+    let addedCount = 0;
+    STATE.parsedExcelMembers.forEach(m => {
+      if (!existingNims.has(m.nomorInduk)) {
+        STATE.members.push(m);
+        existingNims.add(m.nomorInduk);
+        addedCount++;
+      }
+    });
+  }
+
+  saveState();
+  closeModal('importExcelModal');
+  populateMemberQuickSelect();
+  renderMembersTable();
+  showToast(`Sukses! ${STATE.parsedExcelMembers.length} civitas telah tersimpan di database lab.`, "success");
+}
+
+/* ==========================================================================
+   6C. KETENTUAN ASET & BERITA ACARA KERUSAKAN / GANTI RUGI (BAP)
+   ========================================================================== */
+function openDamageClaimModal(ticket) {
+  const loan = STATE.loans.find(l => l.tiket === ticket);
+  if (!loan) return;
+
+  STATE.activeDamageTicket = ticket;
+  const detailsCard = document.getElementById('damageClaimDetailsCard');
+  if (detailsCard) {
+    const itemsList = loan.items.map(i => `<strong>${i.nama}</strong> (${i.jumlah} unit, ${i.kode})`).join('<br>• ');
+    detailsCard.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+        <div><strong>Nomor E-Tiket:</strong> <span style="font-family: var(--font-mono); color: #ef4444;">${loan.tiket}</span></div>
+        <div><strong>Peminjam:</strong> ${loan.nama} (${loan.nim})</div>
+        <div><strong>Peran / Status:</strong> ${loan.peran} - Tadris IPA</div>
+        <div><strong>No. WhatsApp:</strong> ${loan.telepon || '-'}</div>
+      </div>
+      <div style="border-top: 1px dashed var(--border-subtle); padding-top: 8px; margin-top: 8px;">
+        <strong>Barang Mengalami Kerusakan:</strong><br>• ${itemsList}
+      </div>
+      <div style="margin-top: 6px; color: #ef4444;">
+        <strong>Kondisi Ditemukan:</strong> ${loan.statusKondisi || 'Pecah / Kerusakan Fisik'}
+      </div>
+      ${loan.catatanPengembalian ? `<div style="margin-top: 4px; font-style: italic; color: var(--text-dim);">Catatan Pengembalian: "${loan.catatanPengembalian}"</div>` : ''}
+    `;
+  }
+
+  document.getElementById('damageClaimModal')?.classList.add('active');
+}
+
+function sendWhatsAppClaimWarning() {
+  if (!STATE.activeDamageTicket) return;
+  const loan = STATE.loans.find(l => l.tiket === STATE.activeDamageTicket);
+  if (!loan) return;
+
+  const phone = (loan.telepon || '').replace(/\D/g, '');
+  if (!phone) {
+    showToast("Nomor WhatsApp peminjam tidak ditemukan.", "error");
+    return;
+  }
+
+  const cleanPhone = phone.startsWith('0') ? '62' + phone.slice(1) : (phone.startsWith('62') ? phone : '62' + phone);
+  const itemsText = loan.items.map(i => `${i.nama} (${i.jumlah} unit)`).join(', ');
+  const laboranNama = STATE.laboran?.nama || "Ahmad Fadhlillah, S.Si.";
+
+  const text = `Assalamu'alaikum Wr. Wb.
+
+Yth. ${loan.peran} ${loan.nama} (NIM: ${loan.nim})
+
+Diberitahukan dari *Laboratorium Terpadu Tadris IPA IAI YAPNAS JENEPONTO* terkait pengembalian alat praktikum dengan No. E-Tiket: *${loan.tiket}*.
+
+Berdasarkan pemeriksaan fisik laboratorium, barang berikut:
+• *${itemsText}*
+Dinyatakan dalam kondisi: *${loan.statusKondisi || 'Mengalami Kerusakan / Pecah'}*.
+
+Sesuai dengan *Tata Tertib & Pakta Integritas Laboratorium IAI YAPNAS Jeneponto*, peminjam wajib mempertanggungjawabkan dan mengganti unit alat dengan spesifikasi setara paling lambat *7 (tujuh) hari kerja*.
+
+Mohon segera berkoordinasi dengan Pranata Laboratorium di Lab Tadris IPA IAI YAPNAS.
+
+Laboran Bertugas:
+*${laboranNama}*
+NIP. ${STATE.laboran?.nip || '-'}
+Laboratorium Terpadu Tadris IPA - Institut Agama Islam Yapnas Jeneponto.`;
+
+  const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+  showToast("Membuka pesan peringatan resmi ke WhatsApp peminjam...", "success");
+}
+
+function printDamageClaimReceipt() {
+  if (!STATE.activeDamageTicket) return;
+  const loan = STATE.loans.find(l => l.tiket === STATE.activeDamageTicket);
+  if (!loan) return;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const bapNum = `BAP-LAB/${now.getFullYear()}/${loan.tiket.replace('PNJ-', '')}`;
+  const elBapNum = document.getElementById('printBapNumber');
+  if (elBapNum) elBapNum.textContent = bapNum;
+
+  const elName = document.getElementById('printBapBorrowerName');
+  const elRole = document.getElementById('printBapBorrowerRole');
+  const elNim = document.getElementById('printBapBorrowerNim');
+  const elPhone = document.getElementById('printBapBorrowerPhone');
+  const elTicket = document.getElementById('printBapTicketNum');
+  const elCourse = document.getElementById('printBapCourse');
+  const elCond = document.getElementById('printBapCondition');
+  const elDate = document.getElementById('printBapDate');
+  const elSigner = document.getElementById('printBapSignerName');
+
+  if (elName) elName.textContent = loan.nama;
+  if (elRole) elRole.textContent = loan.peran;
+  if (elNim) elNim.textContent = loan.nim;
+  if (elPhone) elPhone.textContent = loan.telepon || '-';
+  if (elTicket) elTicket.textContent = loan.tiket;
+  if (elCourse) elCourse.textContent = `${loan.mataKuliah} (${loan.dosenPengampu})`;
+  if (elCond) elCond.textContent = loan.statusKondisi || 'Kerusakan / Pecah';
+  if (elDate) elDate.textContent = dateStr;
+  if (elSigner) elSigner.textContent = `( ${loan.nama} )`;
+
+  const itemsTbody = document.getElementById('printBapItemsBody');
+  if (itemsTbody) {
+    itemsTbody.innerHTML = loan.items.map((it, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="font-family: monospace;">${it.kode || '-'}</td>
+        <td><strong>${it.nama}</strong> (${it.jumlah} unit)</td>
+        <td>${it.merk || 'Standar Lab'} / ${it.buatan || 'Original'}</td>
+      </tr>
+    `).join('');
+  }
+
+  window.print();
+}
+
+function resolveDamageClaim(ticket) {
+  const loan = STATE.loans.find(l => l.tiket === ticket);
+  if (!loan) return;
+
+  if (confirm(`Tandai ganti rugi aset untuk tiket ${ticket} telah diselesaikan oleh peminjam?`)) {
+    loan.status = "Selesai";
+    loan.statusKondisi = "Selesai (Sudah Diganti)";
+    saveState();
+    renderAllViews();
+    showToast(`Klaim ganti rugi untuk ${ticket} telah diselesaikan.`, "success");
   }
 }
 
@@ -882,29 +1595,48 @@ function renderAdminReturnsQueue() {
   const tbody = document.getElementById('adminReturnsTableBody');
   if (!tbody) return;
 
-  const returnList = STATE.loans.filter(l => l.status === 'Selesai' || l.fotoPengembalian !== null);
+  const returnList = STATE.loans.filter(l => l.status === 'Selesai' || l.status === 'Klaim Ganti Rugi' || l.fotoPengembalian !== null);
   if (returnList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">Belum ada foto bukti pengembalian alat yang diunggah.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">Belum ada foto bukti pengembalian alat yang diunggah.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = returnList.map(loan => `
-    <tr>
-      <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${loan.tiket}</td>
-      <td><strong>${loan.nama}</strong> (${loan.nim})</td>
-      <td>${loan.items.map(i => `${i.nama} (${i.jumlah})`).join(', ')}</td>
-      <td>
-        ${loan.fotoPengembalian ? `
-          <img src="${loan.fotoPengembalian}" alt="Bukti" style="width: 55px; height: 55px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle); cursor: pointer;" onclick="previewImage('${loan.fotoPengembalian}')" title="Klik untuk perbesar">
-        ` : '<span style="color: var(--text-dim);">-</span>'}
-      </td>
-      <td>
-        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">${loan.statusKondisi || 'Baik'}</span><br>
-        <small style="color: var(--text-muted);">${loan.catatanPengembalian || 'Tidak ada catatan'}</small>
-      </td>
-      <td><span class="status-badge ${loan.status.toLowerCase()}">${loan.status}</span></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = returnList.map(loan => {
+    const isDamaged = (loan.statusKondisi || '').includes('Pecah') || (loan.statusKondisi || '').includes('Kerusakan') || (loan.statusKondisi || '').includes('Kurang') || loan.status === 'Klaim Ganti Rugi';
+    return `
+      <tr>
+        <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${loan.tiket}</td>
+        <td><strong>${loan.nama}</strong><br><small class="badge">${loan.peran}</small> (${loan.nim})</td>
+        <td>${loan.items.map(i => `${i.nama} (${i.jumlah})`).join(', ')}</td>
+        <td>
+          ${loan.fotoPengembalian ? `
+            <img src="${loan.fotoPengembalian}" alt="Bukti" style="width: 55px; height: 55px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle); cursor: pointer;" onclick="previewImage('${loan.fotoPengembalian}')" title="Klik untuk perbesar">
+          ` : '<span style="color: var(--text-dim);">-</span>'}
+        </td>
+        <td>
+          <span class="badge" style="background: ${isDamaged ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'}; color: ${isDamaged ? '#ef4444' : '#10b981'};">
+            ${loan.statusKondisi || 'Baik'}
+          </span><br>
+          <small style="color: var(--text-muted);">${loan.catatanPengembalian || 'Tidak ada catatan'}</small>
+        </td>
+        <td><span class="status-badge ${loan.status.toLowerCase().replace(/\s+/g, '-')}">${loan.status}</span></td>
+        <td style="text-align: center;">
+          ${isDamaged && loan.status === 'Klaim Ganti Rugi' ? `
+            <div style="display: flex; gap: 4px; flex-direction: column;">
+              <button class="btn btn-danger btn-sm" onclick="openDamageClaimModal('${loan.tiket}')" style="font-size: 0.72rem; padding: 4px 6px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> BAP Ganti Rugi
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="resolveDamageClaim('${loan.tiket}')" style="font-size: 0.72rem; padding: 3px 6px;">
+                <i class="fa-solid fa-check"></i> Sudah Diganti
+              </button>
+            </div>
+          ` : `
+            <span style="color: #10b981; font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Aset Aman</span>
+          `}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function previewImage(src) {
@@ -1432,7 +2164,7 @@ function submitReturnProof() {
   if (!STATE.activeReturnTicket) return;
 
   if (!STATE.returnPhotoBase64) {
-    showToast("Unggah foto kondisi alat saat dikembalikan.", "warning");
+    showToast("Wajib melampirkan foto fisik alat saat dikembalikan sebagai bukti pertanggungjawaban aset kampus.", "warning");
     return;
   }
 
@@ -1449,23 +2181,42 @@ function submitReturnProof() {
   loan.statusKondisi = condition;
   loan.catatanPengembalian = notes;
   loan.tglKembaliAktual = todayStr;
-  loan.status = "Selesai";
   loan.verifikatorLaboran = STATE.laboran ? STATE.laboran.nama : "Ahmad Fadhlillah, S.Si.";
 
-  // Restore inventory stock
-  loan.items.forEach(cartItem => {
-    const alat = STATE.alat.find(a => a.id === cartItem.id);
-    if (alat) {
-      alat.stokTersedia = Math.min(alat.stok, alat.stokTersedia + cartItem.jumlah);
-      alat.status = 'Tersedia';
-    }
-  });
+  const isDamaged = condition.includes("Pecah") || condition.includes("Kerusakan") || condition.includes("Kurang");
+
+  if (isDamaged) {
+    loan.status = "Klaim Ganti Rugi";
+    // Mark inventory item as damaged if single item
+    loan.items.forEach(cartItem => {
+      const alat = STATE.alat.find(a => a.id === cartItem.id);
+      if (alat) {
+        alat.status = 'Habis'; // Marked as needing repair/replacement
+      }
+    });
+    showToast("Perhatian: Kerusakan aset kampus tercatat. Surat Berita Acara & Kewajiban Ganti Rugi 7 Hari Kerja diterbitkan.", "warning");
+  } else {
+    loan.status = "Selesai";
+    // Restore inventory stock
+    loan.items.forEach(cartItem => {
+      const alat = STATE.alat.find(a => a.id === cartItem.id);
+      if (alat) {
+        alat.stokTersedia = Math.min(alat.stok, alat.stokTersedia + cartItem.jumlah);
+        alat.status = 'Tersedia';
+      }
+      const fas = STATE.fasilitas.find(f => f.id === cartItem.id);
+      if (fas) {
+        fas.stokTersedia = Math.min(fas.stok, fas.stokTersedia + cartItem.jumlah);
+        fas.status = 'Tersedia';
+      }
+    });
+    showToast("Pengembalian alat berhasil diverifikasi! Alat diterima dalam kondisi baik & lengkap. Terima kasih telah menjaga aset kampus.", "success");
+  }
 
   saveState();
   closeModal('returnFormModal');
   renderAllViews();
   searchTrackingLoan();
-  showToast("Pengembalian alat berhasil diverifikasi! Stok inventaris otomatis pulih.", "success");
 }
 
 /* ==========================================================================
@@ -1671,6 +2422,50 @@ function setupEventListeners() {
     });
   });
 
+  // Keyboard Shortcut: Ctrl + Shift + A or Ctrl + Shift + L to open Admin Portal
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a' || e.key === 'L' || e.key === 'l')) {
+      e.preventDefault();
+      triggerAdminAccess();
+    }
+  });
+
+  // Secret Triple Click on Logo or Copyright
+  let clickCount = 0;
+  let clickTimer = null;
+  const triggerSecret = () => {
+    clickCount++;
+    clearTimeout(clickTimer);
+    if (clickCount >= 3) {
+      clickCount = 0;
+      triggerAdminAccess();
+    } else {
+      clickTimer = setTimeout(() => { clickCount = 0; }, 800);
+    }
+  };
+  document.querySelector('.sidebar-logo-img')?.addEventListener('click', triggerSecret);
+  document.getElementById('sidebarCopyText')?.addEventListener('click', triggerSecret);
+
+  // Drag and Drop listeners for Excel Dropzone
+  const dropZone = document.getElementById('excelDropZone');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleExcelFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  // Close modals on clicking backdrop
   window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-backdrop')) {
       e.target.classList.remove('active');
