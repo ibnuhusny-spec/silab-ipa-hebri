@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261017_05">
+  <link rel="stylesheet" href="css/style.css?v=20261017_09">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -193,27 +193,38 @@
             <i class="fa-solid fa-bars"></i>
           </button>
           <div class="page-breadcrumb">
-            <span>SILAB-IPA</span> / <strong id="currentBreadcrumb">Dashboard & SOP Lab</strong>
+            <span class="breadcrumb-prefix">SILAB-IPA</span>
+            <span class="breadcrumb-sep">/</span>
+            <strong id="currentBreadcrumb">Dashboard & SOP Lab</strong>
           </div>
         </div>
 
         <div class="top-bar-actions">
           <!-- Cloud Database Status Pill -->
-          <div id="topCloudStatusPill" class="btn btn-outline btn-sm" style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="handleCloudPillClick()" title="Klik untuk sinkronkan data langsung dengan Supabase Cloud">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;" id="topCloudDot"></span>
-            <span id="topCloudText">Cloud Sync</span>
-          </div>
+          <button id="topCloudStatusPill" class="top-action-btn top-btn-cloud" onclick="handleCloudPillClick()" title="Sinkronkan data dengan Supabase Cloud">
+            <span class="top-cloud-icon-wrap">
+              <i class="fa-solid fa-cloud"></i>
+              <span class="top-cloud-dot" id="topCloudDot"></span>
+            </span>
+            <span class="top-btn-label" id="topCloudText">Cloud Aktif</span>
+          </button>
 
           <!-- Role status pill (Mode Publik vs Mode Admin) -->
-          <div id="topRoleIndicator" class="btn btn-outline btn-sm" style="font-size: 0.78rem;">
-            <i class="fa-solid fa-graduation-cap" id="topRoleIcon" style="color: #38bdf8;"></i>
-            <span id="topRoleText">Portal Akademik Lab</span>
-          </div>
+          <button id="topRoleIndicator" class="top-action-btn top-btn-role" onclick="handleRolePillClick()" title="Portal Akademik Lab">
+            <i class="fa-solid fa-graduation-cap" id="topRoleIcon"></i>
+            <span class="top-btn-label" id="topRoleText">Portal Lab</span>
+          </button>
 
           <!-- Quick Cart -->
-          <button class="btn btn-primary btn-sm" onclick="switchTab('tab-peminjaman')">
+          <button class="top-action-btn top-btn-cart" onclick="switchTab('tab-peminjaman')" title="Keranjang Peminjaman Alat">
             <i class="fa-solid fa-basket-shopping"></i>
-            <span id="topCartText">0 Item</span>
+            <span class="top-btn-label">Pinjam</span>
+            <span class="top-cart-badge" id="topCartText">0</span>
+          </button>
+
+          <!-- Quick Theme Toggle -->
+          <button class="top-action-btn top-btn-theme" id="topThemeToggleBtn" onclick="toggleThemeQuick()" title="Ganti Mode Gelap / Terang">
+            <i class="fa-solid fa-moon" id="topThemeIcon"></i>
           </button>
         </div>
       </header>
@@ -2487,8 +2498,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261017_08"></script>
-  <script src="js/data.js?v=20261017_08"></script>
-  <script src="js/app.js?v=20261017_08"></script>
+  <script src="js/supabase.js?v=20261017_09"></script>
+  <script src="js/data.js?v=20261017_09"></script>
+  <script src="js/app.js?v=20261017_09"></script>
 </body>
 </html>

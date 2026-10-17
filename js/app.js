@@ -185,10 +185,29 @@ function setTheme(theme) {
   localStorage.setItem(STORAGE_KEYS.THEME, theme);
 
   const icon = document.getElementById('themeIcon');
-  if (theme === 'dark') {
-    icon.className = 'fa-solid fa-moon';
+  if (icon) {
+    icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+
+  const topIcon = document.getElementById('topThemeIcon');
+  if (topIcon) {
+    topIcon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+}
+
+function toggleThemeQuick() {
+  const nextTheme = STATE.currentTheme === 'dark' ? 'light' : 'dark';
+  setTheme(nextTheme);
+  showToast(`Tema beralih ke Mode ${nextTheme === 'dark' ? 'Gelap' : 'Terang'}`, 'info');
+}
+
+function handleRolePillClick() {
+  if (STATE.isAdminLoggedIn) {
+    if (confirm("Keluar dari Mode Admin Laboran dan kembali ke Mode Pengunjung?")) {
+      logoutAdminMode();
+    }
   } else {
-    icon.className = 'fa-solid fa-sun';
+    triggerAdminAccess();
   }
 }
 
@@ -473,13 +492,13 @@ function updateRoleUi() {
     if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'block';
     if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'flex';
     if (roleIndicator) {
-      roleIndicator.className = 'btn btn-primary btn-sm';
-      roleIndicator.onclick = () => logoutAdminMode();
-      roleIndicator.title = 'Mode Laboran Aktif (Klik untuk Keluar)';
+      roleIndicator.className = 'top-action-btn top-btn-role is-admin';
+      roleIndicator.onclick = () => handleRolePillClick();
+      roleIndicator.title = 'Mode Admin Laboran Aktif (Klik untuk Keluar)';
       roleIndicator.style.cursor = 'pointer';
     }
-    if (roleIcon) { roleIcon.className = 'fa-solid fa-user-shield'; roleIcon.style.color = '#ffffff'; }
-    if (roleText) roleText.textContent = 'Mode: Laboran (Keluar)';
+    if (roleIcon) { roleIcon.className = 'fa-solid fa-user-shield'; roleIcon.style.color = '#fbbf24'; }
+    if (roleText) roleText.textContent = 'Admin Lab';
 
     // Show all admin-only action buttons
     document.querySelectorAll('.admin-only-action').forEach(el => {
@@ -489,13 +508,13 @@ function updateRoleUi() {
     if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'none';
     if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'none';
     if (roleIndicator) {
-      roleIndicator.className = 'btn btn-outline btn-sm';
-      roleIndicator.onclick = null;
-      roleIndicator.title = 'Portal Akademik IAI YAPNAS';
-      roleIndicator.style.cursor = 'default';
+      roleIndicator.className = 'top-action-btn top-btn-role is-public';
+      roleIndicator.onclick = () => handleRolePillClick();
+      roleIndicator.title = 'Portal Akademik Lab (Klik untuk Masuk Admin)';
+      roleIndicator.style.cursor = 'pointer';
     }
     if (roleIcon) { roleIcon.className = 'fa-solid fa-graduation-cap'; roleIcon.style.color = '#38bdf8'; }
-    if (roleText) roleText.textContent = 'Portal Akademik Lab';
+    if (roleText) roleText.textContent = 'Portal Lab';
 
     // Strictly hide all admin-only action buttons from public view
     document.querySelectorAll('.admin-only-action').forEach(el => {
@@ -714,8 +733,11 @@ function renderOrgStructure() {
         const totalSpanPx = (personsInLevel.length - 1) * 254;
         treeHtml += `
           <div class="org-branch-bus-container">
+            <div class="org-peer-indicator-mobile">
+              <i class="fa-solid fa-people-arrows"></i> Kedudukan Sejajar (${personsInLevel.length} Personel)
+            </div>
             <div class="org-branch-horizontal-bar" style="width: ${Math.min(totalSpanPx, 880)}px; max-width: 95%;"></div>
-            <div style="display: flex; justify-content: center; gap: 24px; width: 100%;">
+            <div class="org-branch-drops-row" style="display: flex; justify-content: center; gap: 24px; width: 100%;">
               ${personsInLevel.map(() => `<div class="org-branch-down-drop"></div>`).join('')}
             </div>
           </div>
@@ -736,16 +758,26 @@ function renderOrgStructure() {
       <div class="org-level-section" data-level="${level}">
         <div class="org-level-badge-header">${levelBadgeText}</div>
         <div class="org-level-cards-row">
-          ${personsInLevel.map(person => `
-            <div class="org-tree-node ${levelClass}" id="node-${person.id}">
-              <div class="org-node-level-tag">Level ${person.level}</div>
-              <div class="org-node-avatar">${person.name.charAt(0)}</div>
-              <div class="org-node-name">${person.name}</div>
-              <div class="org-node-role">${person.role}</div>
-              <div class="org-node-nip">${person.nip || '-'}</div>
-              <div class="org-node-unit">${person.unit || ''}</div>
+          ${personsInLevel.map(person => {
+            const isLaboran = person.role && (person.role.includes("Laboran") || person.role.includes("Pranata"));
+            return `
+            <div class="org-tree-node ${levelClass} ${isLaboran ? 'is-laboran-node' : ''}" id="node-${person.id}">
+              <div class="org-node-header">
+                <span class="org-node-level-tag">Level ${person.level}</span>
+                ${isLaboran ? '<span class="org-node-special-badge"><i class="fa-solid fa-star"></i> Pengelola Teknis</span>' : ''}
+              </div>
+              <div class="org-node-body">
+                <div class="org-node-avatar">${person.name.charAt(0)}</div>
+                <div class="org-node-info">
+                  <div class="org-node-name">${person.name}</div>
+                  <div class="org-node-role">${person.role}</div>
+                  <div class="org-node-nip">${person.nip ? (person.nip.startsWith('NIP') || person.nip === '-' ? person.nip : 'NIP. ' + person.nip) : '-'}</div>
+                  <div class="org-node-unit">${person.unit || ''}</div>
+                </div>
+              </div>
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -2919,7 +2951,7 @@ function renderCart() {
 
   if (sidebarCount) sidebarCount.textContent = totalCount;
   if (mobileCount) mobileCount.textContent = totalCount;
-  if (topCartText) topCartText.textContent = `${totalCount} Item`;
+  if (topCartText) topCartText.textContent = totalCount;
   if (summaryCount) summaryCount.textContent = `Total: ${totalCount} unit`;
   if (textBadge) textBadge.textContent = `${STATE.cart.length} barang (${totalCount} unit)`;
 
