@@ -199,7 +199,7 @@
 
         <div class="top-bar-actions">
           <!-- Cloud Database Status Pill -->
-          <div id="topCloudStatusPill" class="btn btn-outline btn-sm" style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="handleCloudPillClick()" title="Status Koneksi Database Cloud Supabase">
+          <div id="topCloudStatusPill" class="btn btn-outline btn-sm" style="font-size: 0.75rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" onclick="handleCloudPillClick()" title="Klik untuk sinkronkan data langsung dengan Supabase Cloud">
             <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;" id="topCloudDot"></span>
             <span id="topCloudText">Cloud Sync</span>
           </div>
@@ -295,9 +295,9 @@
                   <span class="badge-laboran-role"><i class="fa-solid fa-id-card-clip"></i> Pranata Laboratorium Resmi</span>
                   <span class="badge-laboran-status"><i class="fa-solid fa-circle-check"></i> Siaga Pelayanan Lab</span>
                 </div>
-                <h3 class="laboran-name-heading" id="frontLaboranNama">Ahmad Fadhlillah, S.Si.</h3>
+                <h3 class="laboran-name-heading" id="frontLaboranNama">Hebrianti, S.Pd., M.Si.</h3>
                 <div class="laboran-nip-sub">
-                  <span id="frontLaboranNip">NIP. 19930418 201903 1 007</span> • 
+                  <span id="frontLaboranNip">NIP. -</span> • 
                   <span id="frontLaboranJabatan">Pranata Laboratorium IPA</span>
                 </div>
                 <div class="laboran-schedule-note">
@@ -307,7 +307,7 @@
             </div>
 
             <div class="laboran-showcase-right">
-              <a href="https://wa.me/6282188997600" target="_blank" class="btn-laboran-contact" id="frontLaboranWaLink">
+              <a href="https://wa.me/6282353111825" target="_blank" class="btn-laboran-contact" id="frontLaboranWaLink">
                 <i class="fa-brands fa-whatsapp"></i>
                 <span>Hubungi / Konsultasi Laboran</span>
               </a>
@@ -842,7 +842,7 @@
                 </div>
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <h3 style="font-size: 1.25rem; font-weight: 800;" id="adminDisplayNama">Ahmad Fadhlillah, S.Si.</h3>
+                    <h3 style="font-size: 1.25rem; font-weight: 800;" id="adminDisplayNama">Hebrianti, S.Pd., M.Si.</h3>
                     <button class="btn btn-outline btn-sm" onclick="openEditLaboranModal()" title="Ubah Nama & Data Pranata Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #10b981;">
                       <i class="fa-solid fa-user-pen"></i> Edit Nama / Profil
                     </button>
@@ -857,7 +857,7 @@
                     </button>
                   </div>
                   <div style="font-size: 0.82rem; color: #10b981; font-weight: 600;" id="adminDisplayJabatan">
-                    Pranata Laboratorium IPA • <span id="adminDisplayNip">NIP. 19930418 201903 1 007</span>
+                    Pranata Laboratorium IPA • <span id="adminDisplayNip">NIP. -</span>
                   </div>
                   <div style="font-size: 0.74rem; color: var(--text-dim);">Laboratorium Terpadu Fakultas Tarbiyyah IAI YAPNAS Jeneponto</div>
                 </div>
@@ -1439,7 +1439,7 @@
         <form id="editLaboranForm" onsubmit="saveLaboranProfile(event)">
           <div class="form-group">
             <label for="laboranInputNama">Nama Lengkap & Gelar <span class="req">*</span></label>
-            <input type="text" id="laboranInputNama" class="form-control" placeholder="Contoh: Ahmad Fadhlillah, S.Si." required>
+            <input type="text" id="laboranInputNama" class="form-control" placeholder="Contoh: Hebrianti, S.Pd., M.Si." required>
           </div>
           <div class="form-group">
             <label for="laboranInputNip">NIP / NUPTK / No. Pegawai <span class="req">*</span></label>
@@ -2157,8 +2157,8 @@
         <div class="print-sig-space" style="display: flex; align-items: center; justify-content: center;">
           <div id="printQrVerifyBox" style="width: 65px; height: 65px;"></div>
         </div>
-        <p><strong id="printLaboranName">Ahmad Fadhlillah, S.Si.</strong></p>
-        <p style="font-size: 8.5pt;">NIP. <span id="printLaboranNip">19930418 201903 1 007</span></p>
+        <p><strong id="printLaboranName">Hebrianti, S.Pd., M.Si.</strong></p>
+        <p style="font-size: 8.5pt;">NIP. <span id="printLaboranNip">-</span></p>
       </div>
     </div>
   </div>
@@ -2239,8 +2239,8 @@
         <p>Jeneponto, <span id="printBapDate"></span></p>
         <p><strong>Laboran Lab Terpadu IPA,</strong></p>
         <div class="print-sig-space" style="height: 60px;"></div>
-        <p><strong>Ahmad Fadhlillah, S.Si.</strong></p>
-        <p style="font-size: 8.5pt;">NIP. 19930418 201903 1 007</p>
+        <p><strong>Hebrianti, S.Pd., M.Si.</strong></p>
+        <p style="font-size: 8.5pt;">NIP. -</p>
       </div>
     </div>
   </div>
@@ -2487,8 +2487,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261017_07"></script>
-  <script src="js/data.js?v=20261017_07"></script>
-  <script src="js/app.js?v=20261017_07"></script>
+  <script src="js/supabase.js?v=20261017_08"></script>
+  <script src="js/data.js?v=20261017_08"></script>
+  <script src="js/app.js?v=20261017_08"></script>
 </body>
 </html>

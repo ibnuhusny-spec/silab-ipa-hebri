@@ -115,10 +115,10 @@ function loadData() {
   });
 
   STATE.laboran = savedLaboran ? JSON.parse(savedLaboran) : {
-    nama: "Ahmad Fadhlillah, S.Si.",
-    nip: "19930418 201903 1 007",
+    nama: "Hebrianti, S.Pd., M.Si.",
+    nip: "-",
     jabatan: "Pranata Laboratorium IPA",
-    kontak: "+62 821-8899-7600"
+    kontak: "+6282353111825"
   };
 
   STATE.orgStructure = savedOrg ? JSON.parse(savedOrg) : (typeof ORGANIZATION_STRUCTURE !== 'undefined' ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : []);
@@ -127,10 +127,9 @@ function loadData() {
   STATE.isAdminLoggedIn = sessionStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
   updateRoleUi();
   populateMemberQuickSelect();
-  saveState();
 }
 
-function saveState() {
+function saveStateLocalOnly() {
   localStorage.setItem(STORAGE_KEYS.ALAT, JSON.stringify(STATE.alat));
   localStorage.setItem(STORAGE_KEYS.FASILITAS, JSON.stringify(STATE.fasilitas));
   localStorage.setItem(STORAGE_KEYS.BAHAN, JSON.stringify(STATE.bahan));
@@ -139,6 +138,10 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(STATE.adminConfig));
   localStorage.setItem(STORAGE_KEYS.LABORAN, JSON.stringify(STATE.laboran));
   localStorage.setItem(STORAGE_KEYS.ORG_STRUCTURE, JSON.stringify(STATE.orgStructure));
+}
+
+function saveState() {
+  saveStateLocalOnly();
 
   // Auto-sync ke Supabase Cloud (jika terhubung & diaktifkan)
   if (typeof triggerCloudAutoSync === 'function') {
@@ -589,7 +592,7 @@ function updatePublicLaboranDisplay() {
   const elJabatan = document.getElementById('frontLaboranJabatan');
   const elWa = document.getElementById('frontLaboranWaLink');
 
-  if (elNama) elNama.textContent = STATE.laboran.nama || 'Ahmad Fadhlillah, S.Si.';
+  if (elNama) elNama.textContent = STATE.laboran.nama || 'Hebrianti, S.Pd., M.Si.';
   if (elNip) elNip.textContent = STATE.laboran.nip ? 'NIP. ' + STATE.laboran.nip : '-';
   if (elJabatan) elJabatan.textContent = STATE.laboran.jabatan || 'Pranata Laboratorium IPA';
   if (elWa && STATE.laboran.kontak) {
@@ -1025,6 +1028,9 @@ function deleteOrgPerson(id) {
 
   if (confirm(`Hapus "${person.name}" (${person.role}) dari struktur organisasi?`)) {
     STATE.orgStructure = STATE.orgStructure.filter(p => p.id !== id);
+    if (typeof SILAB_SUPABASE !== 'undefined') {
+      SILAB_SUPABASE.deleteItem('silab_org_structure', 'id', id);
+    }
     saveState();
     renderOrgStructure();
     renderOrgStructureTable();
@@ -1648,9 +1654,21 @@ function deleteInventoryItem(type, itemId) {
   if (!item) return;
 
   if (confirm(`Yakin ingin menghapus "${item.nama}" dari inventaris laboratorium?`)) {
-    if (type === 'ALAT') STATE.alat = STATE.alat.filter(a => a.id !== itemId);
-    else if (type === 'FASILITAS') STATE.fasilitas = STATE.fasilitas.filter(f => f.id !== itemId);
-    else if (type === 'BAHAN') STATE.bahan = STATE.bahan.filter(b => b.id !== itemId);
+    let tableName = null;
+    if (type === 'ALAT') {
+      STATE.alat = STATE.alat.filter(a => a.id !== itemId);
+      tableName = 'silab_alat';
+    } else if (type === 'FASILITAS') {
+      STATE.fasilitas = STATE.fasilitas.filter(f => f.id !== itemId);
+      tableName = 'silab_fasilitas';
+    } else if (type === 'BAHAN') {
+      STATE.bahan = STATE.bahan.filter(b => b.id !== itemId);
+      tableName = 'silab_bahan_kimia';
+    }
+
+    if (tableName && typeof SILAB_SUPABASE !== 'undefined') {
+      SILAB_SUPABASE.deleteItem(tableName, 'id', itemId);
+    }
 
     saveState();
     renderAllViews();
@@ -2340,6 +2358,9 @@ function deleteMember(memberId) {
 
   if (confirm(`Hapus data ${member.peran} "${member.nama}" (${member.nomorInduk}) dari database?`)) {
     STATE.members = STATE.members.filter(m => m.id !== memberId);
+    if (typeof SILAB_SUPABASE !== 'undefined') {
+      SILAB_SUPABASE.deleteItem('silab_members', 'id', memberId);
+    }
     saveState();
     populateMemberQuickSelect();
     renderMembersView();
@@ -2618,7 +2639,7 @@ function sendWhatsAppClaimWarning() {
 
   const cleanPhone = phone.startsWith('0') ? '62' + phone.slice(1) : (phone.startsWith('62') ? phone : '62' + phone);
   const itemsText = loan.items.map(i => `${i.nama} (${i.jumlah} unit)`).join(', ');
-  const laboranNama = STATE.laboran?.nama || "Ahmad Fadhlillah, S.Si.";
+  const laboranNama = STATE.laboran?.nama || "Hebrianti, S.Pd., M.Si.";
 
   const text = `Assalamu'alaikum Wr. Wb.
 
@@ -2740,7 +2761,7 @@ function adminApproveLoan(ticket) {
   if (!loan) return;
 
   loan.status = "Dipinjam";
-  loan.verifikatorLaboran = STATE.laboran ? STATE.laboran.nama : "Ahmad Fadhlillah, S.Si.";
+  loan.verifikatorLaboran = STATE.laboran ? STATE.laboran.nama : "Hebrianti, S.Pd., M.Si.";
   saveState();
   renderAllViews();
   showToast(`Peminjaman tiket ${ticket} disetujui. Mahasiswa dapat mengambil alat di lab.`, "success");
@@ -3361,7 +3382,7 @@ function submitReturnProof() {
   loan.statusKondisi = condition;
   loan.catatanPengembalian = notes;
   loan.tglKembaliAktual = todayStr;
-  loan.verifikatorLaboran = STATE.laboran ? STATE.laboran.nama : "Ahmad Fadhlillah, S.Si.";
+  loan.verifikatorLaboran = STATE.laboran ? STATE.laboran.nama : "Hebrianti, S.Pd., M.Si.";
 
   const isDamaged = condition.includes("Pecah") || condition.includes("Kerusakan") || condition.includes("Kurang");
 
@@ -3942,8 +3963,31 @@ function initSupabaseIntegration() {
   const sqlPre = document.getElementById('sqlSchemaPre');
   if (sqlPre) sqlPre.value = SUPABASE_SCHEMA_SQL_CODE;
 
-  // Check connection health in background without toast
-  checkSupabaseHealthUi(false);
+  // Tarik data live dari Supabase Cloud saat aplikasi pertama kali dibuka (di HP / Laptop)
+  autoSyncFromCloud(true);
+
+  // Berlangganan event real-time database Supabase
+  if (typeof SILAB_SUPABASE.subscribeToRealtime === 'function') {
+    SILAB_SUPABASE.subscribeToRealtime((payload) => {
+      console.log("[Auto-Sync] Realtime change terdeteksi di Supabase, menarik data terbaru...", payload);
+      autoSyncFromCloud(true);
+    });
+  }
+
+  // Sinkronisasi otomatis saat pengguna membuka kembali tab atau menyalakan layar HP
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      autoSyncFromCloud(true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    autoSyncFromCloud(true);
+  });
+
+  window.addEventListener('online', () => {
+    autoSyncFromCloud(true);
+  });
 }
 
 async function checkSupabaseHealthUi(showToastNotification = true) {
@@ -4088,12 +4132,7 @@ async function checkSupabaseHealthUi(showToastNotification = true) {
 }
 
 function handleCloudPillClick() {
-  if (STATE.isAdminLoggedIn) {
-    switchTab('tab-admin');
-    switchAdminSubTab('admin-tab-cloud');
-  } else {
-    showToast(`Status Database: ${SILAB_SUPABASE.statusMessage}. Masuk sebagai Admin untuk mengelola sinkronisasi cloud.`, 'info');
-  }
+  autoSyncFromCloud(false);
 }
 
 function openAdminCloudTabFromAnywhere() {
@@ -4168,6 +4207,90 @@ async function handlePushLocalToSupabase() {
   }
 }
 
+let isSyncingFromCloud = false;
+
+function applyCloudDataToState(cloudData) {
+  let updatedCount = 0;
+  if (cloudData.alat && cloudData.alat.length > 0) {
+    STATE.alat = cloudData.alat;
+    updatedCount += cloudData.alat.length;
+  }
+  if (cloudData.fasilitas && cloudData.fasilitas.length > 0) {
+    STATE.fasilitas = cloudData.fasilitas;
+    updatedCount += cloudData.fasilitas.length;
+  }
+  if (cloudData.bahan && cloudData.bahan.length > 0) {
+    STATE.bahan = cloudData.bahan;
+    updatedCount += cloudData.bahan.length;
+  }
+  if (cloudData.members && cloudData.members.length > 0) {
+    STATE.members = cloudData.members;
+    updatedCount += cloudData.members.length;
+  }
+  if (cloudData.loans && cloudData.loans.length > 0) {
+    STATE.loans = cloudData.loans;
+    updatedCount += cloudData.loans.length;
+  }
+  if (cloudData.laboran) {
+    STATE.laboran = cloudData.laboran;
+  }
+  if (cloudData.orgStructure && cloudData.orgStructure.length > 0) {
+    STATE.orgStructure = cloudData.orgStructure;
+  }
+
+  // Simpan ke storage lokal secara terisolasi tanpa memicu push kembali ke cloud
+  saveStateLocalOnly();
+  populateMemberQuickSelect();
+  renderAllViews();
+  return updatedCount;
+}
+
+async function autoSyncFromCloud(isBackground = true) {
+  if (typeof SILAB_SUPABASE === 'undefined') return;
+  if (isSyncingFromCloud) return;
+
+  const topDot = document.getElementById('topCloudDot');
+  const topText = document.getElementById('topCloudText');
+
+  if (!isBackground) {
+    if (topDot) topDot.style.background = '#38bdf8';
+    if (topText) topText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sinkronisasi...';
+    showToast("🔄 Menyinkronkan data dengan Supabase Cloud...", "info");
+  }
+
+  isSyncingFromCloud = true;
+  try {
+    const health = await SILAB_SUPABASE.checkConnection();
+    await checkSupabaseHealthUi(false);
+
+    if (health.ok && health.status === 'connected') {
+      const cloudData = await SILAB_SUPABASE.pullAllCloudToLocal();
+      const updatedCount = applyCloudDataToState(cloudData);
+
+      if (topDot) topDot.style.background = '#10b981';
+      if (topText) topText.textContent = 'Cloud Aktif';
+
+      if (!isBackground) {
+        showToast(`🟢 Berhasil tersinkronisasi! Memuat ${updatedCount} data terbaru dari Cloud.`, "success");
+      }
+    } else {
+      if (topDot) topDot.style.background = health.status === 'quota_exceeded' ? '#ef4444' : '#94a3b8';
+      if (topText) topText.textContent = health.status === 'quota_exceeded' ? 'Quota Limit' : 'Local Mode';
+
+      if (!isBackground) {
+        showToast(`Sinkronisasi Cloud: ${health.message}`, "warning");
+      }
+    }
+  } catch (err) {
+    console.warn("Auto-sync Supabase gagal:", err);
+    if (!isBackground) {
+      showToast("Gagal sinkron dengan cloud: " + err.message, "error");
+    }
+  } finally {
+    isSyncingFromCloud = false;
+  }
+}
+
 async function handlePullSupabaseToLocal() {
   if (SILAB_SUPABASE.status === 'quota_exceeded') {
     alert("Proyek Supabase saat ini terkena batasan kuota (exceed_egress_quota).");
@@ -4182,37 +4305,7 @@ async function handlePullSupabaseToLocal() {
 
   try {
     const cloudData = await SILAB_SUPABASE.pullAllCloudToLocal();
-    let updatedCount = 0;
-
-    if (cloudData.alat && cloudData.alat.length > 0) {
-      STATE.alat = cloudData.alat;
-      updatedCount += cloudData.alat.length;
-    }
-    if (cloudData.fasilitas && cloudData.fasilitas.length > 0) {
-      STATE.fasilitas = cloudData.fasilitas;
-      updatedCount += cloudData.fasilitas.length;
-    }
-    if (cloudData.bahan && cloudData.bahan.length > 0) {
-      STATE.bahan = cloudData.bahan;
-      updatedCount += cloudData.bahan.length;
-    }
-    if (cloudData.members && cloudData.members.length > 0) {
-      STATE.members = cloudData.members;
-      updatedCount += cloudData.members.length;
-    }
-    if (cloudData.loans && cloudData.loans.length > 0) {
-      STATE.loans = cloudData.loans;
-      updatedCount += cloudData.loans.length;
-    }
-    if (cloudData.laboran) {
-      STATE.laboran = cloudData.laboran;
-    }
-    if (cloudData.orgStructure && cloudData.orgStructure.length > 0) {
-      STATE.orgStructure = cloudData.orgStructure;
-    }
-
-    saveState();
-    renderAllViews();
+    const updatedCount = applyCloudDataToState(cloudData);
     showToast(`Berhasil memperbarui ${updatedCount} data dari Supabase!`, "success");
   } catch (err) {
     console.error("Gagal menarik data dari Supabase:", err);

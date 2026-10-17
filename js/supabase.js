@@ -25,8 +25,8 @@ class SupabaseService {
       const saved = localStorage.getItem(SUPABASE_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Otomatis beralih jika masih tersimpan URL proyek lama yang kuotanya penuh
-        if (parsed.url && parsed.url.includes('symrdzypejycfbkdwuzw')) {
+        // Otomatis beralih jika masih tersimpan URL proyek lama atau key kosong
+        if (!parsed.url || parsed.url.includes('symrdzypejycfbkdwuzw') || !parsed.anonKey) {
           localStorage.setItem(SUPABASE_STORAGE_KEY, JSON.stringify(DEFAULT_SUPABASE_CONFIG));
           return { ...DEFAULT_SUPABASE_CONFIG };
         }
@@ -289,10 +289,10 @@ class SupabaseService {
     // Format laboran
     const laboranPayload = [{
       id: 'primary',
-      nama: state.laboran?.nama || "Ahmad Fadhlillah, S.Si.",
-      nip: state.laboran?.nip || "19930418 201903 1 007",
+      nama: state.laboran?.nama || "Hebrianti, S.Pd., M.Si.",
+      nip: state.laboran?.nip || "-",
       jabatan: state.laboran?.jabatan || "Pranata Laboratorium IPA",
-      kontak: state.laboran?.kontak || "+62 821-8899-7600",
+      kontak: state.laboran?.kontak || "+6282353111825",
       updated_at: new Date().toISOString()
     }];
 
@@ -495,6 +495,31 @@ class SupabaseService {
     }
 
     return res;
+  }
+
+  // Subscribe to real-time database changes across all silab tables
+  subscribeToRealtime(callback) {
+    if (!this.client) return null;
+    try {
+      if (this.realtimeChannel) {
+        try { this.client.removeChannel(this.realtimeChannel); } catch (e) {}
+      }
+      this.realtimeChannel = this.client
+        .channel('silab_live_changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+          console.log('[Supabase Realtime] Perubahan terdeteksi:', payload.table, payload.eventType);
+          if (typeof callback === 'function') {
+            callback(payload);
+          }
+        })
+        .subscribe((status, err) => {
+          console.log('[Supabase Realtime] Channel status:', status, err || '');
+        });
+      return this.realtimeChannel;
+    } catch (e) {
+      console.warn('Gagal langganan Supabase realtime:', e);
+      return null;
+    }
   }
 }
 

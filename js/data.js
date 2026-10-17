@@ -15,7 +15,7 @@ const CAMPUS_INFO = {
     dean: "Dr. H. Abd. Rahman, M.Pd.I",
     headOfDept: "Nurul Mukhlisah, M.Pd.",
     headOfLab: "Dr. H. Muhammad Ilyas, M.Pd.",
-    laboran: "Ahmad Fadhlillah, S.Si.",
+    laboran: "Hebrianti, S.Pd., M.Si.",
     academicYear: "2026/2027",
     logo: "yapnas.png"
 };
@@ -57,8 +57,8 @@ const ORGANIZATION_STRUCTURE = [
     {
         id: "org-4",
         role: "Laboran / Pranata Laboratorium",
-        name: "Ahmad Fadhlillah, S.Si.",
-        nip: "19930418 201903 1 007",
+        name: "Hebrianti, S.Pd., M.Si.",
+        nip: "-",
         unit: "Pengelola Teknis & Inventaris",
         photo: "laboran",
         level: 4,
@@ -637,7 +637,7 @@ const DEFAULT_PEMINJAMAN = [
         catatanPengembalian: "Alat telah dikembalikan dalam kondisi lensa bersih, lampu berfungsi baik, tabung reaksi lengkap tanpa retak.",
         fotoPengembalian: "assets/microscope.jpg",
         statusKondisi: "Baik & Lengkap",
-        verifikatorLaboran: "Ahmad Fadhlillah, S.Si."
+        verifikatorLaboran: "Hebrianti, S.Pd., M.Si."
     },
     {
         tiket: "PNJ-202610-002",
@@ -660,7 +660,7 @@ const DEFAULT_PEMINJAMAN = [
         catatanPengembalian: null,
         fotoPengembalian: null,
         statusKondisi: "Sedang Digunakan di Ruang Instrumentasi",
-        verifikatorLaboran: "Ahmad Fadhlillah, S.Si."
+        verifikatorLaboran: "Hebrianti, S.Pd., M.Si."
     },
     {
         tiket: "PNJ-202610-003",
