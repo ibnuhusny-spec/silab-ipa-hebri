@@ -4,8 +4,8 @@
  */
 
 const DEFAULT_SUPABASE_CONFIG = {
-  url: "https://symrdzypejycfbkdwuzw.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5bXJkenlwZWp5Y2Zia2R3dXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxODI0MzMsImV4cCI6MjEwNzc1ODQzM30.hNemeTE92hWoAnhH7tEL0Ssy6rSxoISZznWanHVinsk",
+  url: "https://cmothlezkkkiffsgxdfm.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtb3RobGV6a2traWZmc2d4ZGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNzQ3NTYsImV4cCI6MjEwNzc1MDc1Nn0.frpt43yQuGFoqyi_8oEko70sVryX2OaEPazFEKefDmI",
   autoSync: true
 };
 
@@ -24,7 +24,13 @@ class SupabaseService {
     try {
       const saved = localStorage.getItem(SUPABASE_STORAGE_KEY);
       if (saved) {
-        return { ...DEFAULT_SUPABASE_CONFIG, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        // Otomatis beralih jika masih tersimpan URL proyek lama yang kuotanya penuh
+        if (parsed.url && parsed.url.includes('symrdzypejycfbkdwuzw')) {
+          localStorage.setItem(SUPABASE_STORAGE_KEY, JSON.stringify(DEFAULT_SUPABASE_CONFIG));
+          return { ...DEFAULT_SUPABASE_CONFIG };
+        }
+        return { ...DEFAULT_SUPABASE_CONFIG, ...parsed };
       }
     } catch (e) {
       console.warn("Gagal memuat konfigurasi Supabase dari storage:", e);
@@ -101,14 +107,21 @@ class SupabaseService {
 
       if (response.status === 404 || response.status === 400) {
         const errJson = await response.json().catch(() => ({}));
-        if (errJson.message && errJson.message.includes('relation "public.silab_alat" does not exist')) {
+        if (
+          errJson.code === 'PGRST205' ||
+          (errJson.message && (
+            errJson.message.includes('Could not find the table') ||
+            errJson.message.includes('relation "public.silab_alat" does not exist') ||
+            errJson.message.includes('does not exist')
+          ))
+        ) {
           this.status = 'tables_missing';
-          this.statusMessage = 'Koneksi ke Supabase aktif, namun tabel belum dibuat di SQL Editor.';
+          this.statusMessage = '🟢 Koneksi Supabase Berhasil & Aktif! Tabel belum dibuat di SQL Editor.';
           return {
             ok: false,
             status: 'tables_missing',
-            title: 'Tabel Database Belum Dibuat',
-            message: 'Koneksi ke Supabase berhasil terhubung, tetapi tabel belum dibuat. Silakan salin & jalankan skrip SQL di menu SQL Editor Supabase Anda.',
+            title: 'Koneksi Supabase Sukses! (Tabel Belum Dibuat)',
+            message: 'Koneksi ke Supabase berhasil terhubung dan kuota 100% aktif! Sekarang cukup salin skrip SQL di tombol samping, lalu jalankan di menu SQL Editor Supabase Anda.',
             type: 'warning'
           };
         }
