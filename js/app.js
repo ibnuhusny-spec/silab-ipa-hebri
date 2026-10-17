@@ -336,6 +336,14 @@ function updateRoleUi() {
   const roleIcon = document.getElementById('topRoleIcon');
   const roleText = document.getElementById('topRoleText');
 
+  // Toggle body class for CSS visibility control
+  if (document.body) {
+    document.body.classList.toggle('admin-authenticated', !!STATE.isAdminLoggedIn);
+  }
+
+  // Always update public front showcase
+  updatePublicLaboranDisplay();
+
   if (STATE.isAdminLoggedIn) {
     if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'block';
     if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'flex';
@@ -347,6 +355,11 @@ function updateRoleUi() {
     }
     if (roleIcon) { roleIcon.className = 'fa-solid fa-user-shield'; roleIcon.style.color = '#ffffff'; }
     if (roleText) roleText.textContent = 'Mode: Laboran (Keluar)';
+
+    // Show all admin-only action buttons
+    document.querySelectorAll('.admin-only-action').forEach(el => {
+      el.style.display = el.classList.contains('flex-display') ? 'flex' : 'inline-flex';
+    });
   } else {
     if (sidebarAdminGroup) sidebarAdminGroup.style.display = 'none';
     if (mobileAdminNavBtn) mobileAdminNavBtn.style.display = 'none';
@@ -358,7 +371,16 @@ function updateRoleUi() {
     }
     if (roleIcon) { roleIcon.className = 'fa-solid fa-graduation-cap'; roleIcon.style.color = '#38bdf8'; }
     if (roleText) roleText.textContent = 'Portal Akademik Lab';
+
+    // Strictly hide all admin-only action buttons from public view
+    document.querySelectorAll('.admin-only-action').forEach(el => {
+      el.style.display = 'none';
+    });
   }
+
+  // Refresh views so node cards & member cards adapt to role
+  if (typeof renderOrgStructure === 'function') renderOrgStructure();
+  if (typeof renderMembersView === 'function') renderMembersView();
 }
 
 function switchAdminSubTab(subTabId) {
@@ -385,6 +407,11 @@ function switchAdminSubTab(subTabId) {
     const view = document.getElementById('admin-tab-returns');
     if (view) view.style.display = 'block';
     renderAdminReturnsQueue();
+  } else if (subTabId === 'admin-tab-org') {
+    document.getElementById('btnAdminTabOrg')?.classList.add('active');
+    const view = document.getElementById('admin-tab-org');
+    if (view) view.style.display = 'block';
+    renderAdminOrgTable();
   }
 }
 
@@ -419,6 +446,24 @@ function renderLaboranProfile() {
   if (adminJabatan) adminJabatan.innerHTML = `${STATE.laboran.jabatan} • <span id="adminDisplayNip">NIP. ${STATE.laboran.nip}</span>`;
   if (printNama) printNama.textContent = STATE.laboran.nama;
   if (printNip) printNip.textContent = STATE.laboran.nip;
+
+  updatePublicLaboranDisplay();
+}
+
+function updatePublicLaboranDisplay() {
+  if (!STATE.laboran) return;
+  const elNama = document.getElementById('frontLaboranNama');
+  const elNip = document.getElementById('frontLaboranNip');
+  const elJabatan = document.getElementById('frontLaboranJabatan');
+  const elWa = document.getElementById('frontLaboranWaLink');
+
+  if (elNama) elNama.textContent = STATE.laboran.nama || 'Ahmad Fadhlillah, S.Si.';
+  if (elNip) elNip.textContent = STATE.laboran.nip ? 'NIP. ' + STATE.laboran.nip : '-';
+  if (elJabatan) elJabatan.textContent = STATE.laboran.jabatan || 'Pranata Laboratorium IPA';
+  if (elWa && STATE.laboran.kontak) {
+    const cleanPhone = STATE.laboran.kontak.replace(/\D/g, '');
+    elWa.href = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone}`;
+  }
 }
 
 function openEditLaboranModal() {
@@ -440,6 +485,7 @@ function saveLaboranProfile(event) {
   STATE.laboran = { nama, nip, jabatan, kontak };
   saveState();
   renderLaboranProfile();
+  updatePublicLaboranDisplay();
   renderDashboard();
   closeModal('editLaboranModal');
   showToast("Nama dan profil Pranata Laboratorium berhasil diperbarui secara permanen.", "success");
@@ -563,7 +609,7 @@ function renderOrgStructure() {
               <div class="org-node-role">${person.role}</div>
               <div class="org-node-nip">${person.nip || '-'}</div>
               <div class="org-node-unit">${person.unit || ''}</div>
-              
+              ${STATE.isAdminLoggedIn ? `
               <div class="org-node-actions">
                 <button type="button" class="btn-node-act" onclick="editOrgPerson('${person.id}')" title="Edit Data">
                   <i class="fa-solid fa-pen"></i> Edit
@@ -578,6 +624,7 @@ function renderOrgStructure() {
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
+              ` : ''}
             </div>
           `).join('')}
         </div>
@@ -638,9 +685,14 @@ function openOrgStructureManager() {
   openModal('orgStructureModal');
 }
 
+function renderAdminOrgTable() {
+  renderOrgStructureTable();
+}
+
 function renderOrgStructureTable() {
   const tbody = document.getElementById('orgStructureTableBody');
-  if (!tbody) return;
+  const adminTbody = document.getElementById('adminOrgTableBody');
+  if (!tbody && !adminTbody) return;
 
   if (!STATE.orgStructure || STATE.orgStructure.length === 0) {
     STATE.orgStructure = (typeof ORGANIZATION_STRUCTURE !== 'undefined') ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : [];
@@ -651,7 +703,7 @@ function renderOrgStructureTable() {
     return (a.order || 1) - (b.order || 1);
   });
 
-  tbody.innerHTML = list.map(item => {
+  const rowsHtml = list.map(item => {
     let lvlBadge = `<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8;">Tingkat ${item.level}</span>`;
     let statusText = `<span style="font-size: 0.76rem; color: var(--text-muted);">Bawahan</span>`;
     if (item.level === 1) {
@@ -697,6 +749,9 @@ function renderOrgStructureTable() {
       </tr>
     `;
   }).join('');
+
+  if (tbody) tbody.innerHTML = rowsHtml;
+  if (adminTbody) adminTbody.innerHTML = rowsHtml;
 }
 
 function openAddOrgPersonModal() {
@@ -1583,6 +1638,7 @@ function renderMembersView() {
               <button type="button" class="btn-direct-loan" onclick="directLoanForMember('${m.id}')" title="Buat Pinjaman Baru untuk ${m.nama}">
                 <i class="fa-solid fa-cart-plus"></i> Pinjamkan Alat
               </button>
+              ${STATE.isAdminLoggedIn ? `
               <div class="member-admin-actions">
                 <button type="button" class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data Civitas">
                   <i class="fa-solid fa-pen-to-square"></i>
@@ -1591,6 +1647,7 @@ function renderMembersView() {
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
+              ` : ''}
             </div>
           </div>
         `;
@@ -1628,14 +1685,16 @@ function renderMembersView() {
             <td style="text-align: center;">
               <div style="display: flex; gap: 4px; justify-content: center;">
                 <button class="btn btn-primary btn-xs" onclick="directLoanForMember('${m.id}')" title="Pinjamkan Alat">
-                  <i class="fa-solid fa-cart-plus"></i>
+                  <i class="fa-solid fa-cart-plus"></i> Pinjamkan
                 </button>
+                ${STATE.isAdminLoggedIn ? `
                 <button class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button class="btn btn-danger btn-xs" onclick="triggerDeleteMemberFlow('${m.id}')" title="Hapus">
                   <i class="fa-solid fa-trash"></i>
                 </button>
+                ` : ''}
               </div>
             </td>
           </tr>

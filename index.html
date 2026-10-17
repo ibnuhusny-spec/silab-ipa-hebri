@@ -268,6 +268,42 @@
             </div>
           </div>
 
+          <!-- ================================================================
+               PROFIL RESMI PRANATA LABORATORIUM (TAMPIL DI HALAMAN DEPAN PUBLIK)
+               ================================================================ -->
+          <div class="laboran-showcase-card">
+            <div class="laboran-showcase-left">
+              <div class="laboran-avatar-box">
+                <i class="fa-solid fa-user-tie"></i>
+                <span class="laboran-pulse-dot" title="Status: Aktif Siaga di Laboratorium"></span>
+              </div>
+              <div class="laboran-meta-info">
+                <div class="laboran-badge-row">
+                  <span class="badge-laboran-role"><i class="fa-solid fa-id-card-clip"></i> Pranata Laboratorium Resmi</span>
+                  <span class="badge-laboran-status"><i class="fa-solid fa-circle-check"></i> Siaga Pelayanan Lab</span>
+                </div>
+                <h3 class="laboran-name-heading" id="frontLaboranNama">Ahmad Fadhlillah, S.Si.</h3>
+                <div class="laboran-nip-sub">
+                  <span id="frontLaboranNip">NIP. 19930418 201903 1 007</span> • 
+                  <span id="frontLaboranJabatan">Pranata Laboratorium IPA</span>
+                </div>
+                <div class="laboran-schedule-note">
+                  <i class="fa-regular fa-clock" style="color: #10b981;"></i> Pelayanan Inventaris: <strong>Senin - Sabtu (08.00 - 16.00 WITA)</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="laboran-showcase-right">
+              <a href="https://wa.me/6282188997600" target="_blank" class="btn-laboran-contact" id="frontLaboranWaLink">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>Hubungi / Konsultasi Laboran</span>
+              </a>
+              <div class="laboran-help-text">
+                Penanggung jawab teknis, peminjaman instrumen sains, dan keamanan laboratorium IPA.
+              </div>
+            </div>
+          </div>
+
           <!-- SKEMA PEMINJAMAN & PENGEMBALIAN BARANG YANG SANGAT AMAN (5 PILAR) -->
           <div class="section-header" style="margin-top: 36px;">
             <div class="section-title-wrap">
@@ -287,7 +323,8 @@
               <p>Pengelola Laboratorium Terpadu Jurusan Tadris IPA - Fakultas Tarbiyyah IAI YAPNAS Jeneponto</p>
             </div>
             <div class="header-action-btn-wrap" style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-outline btn-sm" onclick="openOrgStructureManager()" id="btnOpenOrgManagerHeader" title="Kelola susunan struktur organisasi">
+              <!-- Tombol Edit Khusus Admin (Tersembunyi untuk Publik) -->
+              <button class="btn btn-outline btn-sm admin-only-action" onclick="openOrgStructureManager()" id="btnOpenOrgManagerHeader" title="Kelola susunan struktur organisasi" style="display: none;">
                 <i class="fa-solid fa-diagram-project" style="color: #38bdf8;"></i> Kelola Bagan Organisasi
               </button>
             </div>
@@ -312,7 +349,8 @@
                 <button type="button" class="btn-zoom" onclick="resetOrgTreeZoom()" title="Reset Tampilan (100%)"><i class="fa-solid fa-rotate-right"></i></button>
               </div>
 
-              <div class="org-admin-controls-header" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <!-- Tombol Admin Tersembunyi untuk Publik -->
+              <div class="org-admin-controls-header admin-only-action" style="display: none; gap: 8px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-primary btn-sm" onclick="openAddOrgPersonModal()">
                   <i class="fa-solid fa-user-plus"></i> Tambah Jabatan
                 </button>
@@ -480,10 +518,11 @@
               <p>Direktori Civitas Akademika Tadris IPA IAI YAPNAS JENEPONTO terintegrasi Basis Data Cloud (Supabase Ready)</p>
             </div>
             <div class="section-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn btn-primary btn-sm" onclick="triggerAddMemberFlow()">
+              <!-- Tombol Admin Tersembunyi untuk Publik -->
+              <button class="btn btn-primary btn-sm admin-only-action" onclick="triggerAddMemberFlow()" style="display: none;">
                 <i class="fa-solid fa-user-plus"></i> Input Data Civitas
               </button>
-              <button class="btn btn-outline btn-sm" onclick="openImportExcelModal()">
+              <button class="btn btn-outline btn-sm admin-only-action" onclick="openImportExcelModal()" style="display: none;">
                 <i class="fa-solid fa-file-excel"></i> Import File Excel
               </button>
               <button class="btn btn-outline btn-sm" onclick="downloadMemberTemplate()">
@@ -848,7 +887,7 @@
               <button class="admin-tab-btn" id="btnAdminTabReturns" onclick="switchAdminSubTab('admin-tab-returns')">
                 <i class="fa-solid fa-clipboard-check"></i> Validasi Pengembalian & BAP
               </button>
-              <button class="admin-tab-btn" id="btnAdminTabOrg" onclick="openOrgStructureManager()">
+              <button class="admin-tab-btn" id="btnAdminTabOrg" onclick="switchAdminSubTab('admin-tab-org')">
                 <i class="fa-solid fa-sitemap"></i> Struktur Organisasi
               </button>
             </div>
@@ -989,6 +1028,48 @@
                     </tr>
                   </thead>
                   <tbody id="adminReturnsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 5: KELOLA STRUKTUR ORGANISASI LABORATORIUM (KHUSUS ADMIN) -->
+            <div id="admin-tab-org" class="admin-sub-view" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-sitemap" style="color: #38bdf8;"></i> Kelola Struktur Organisasi Laboratorium
+                  </div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">
+                    Atur susunan hierarki pimpinan paling atas, tingkatan sejajar sama rata, dan pelaksana bawah.
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="openAddOrgPersonModal()">
+                    <i class="fa-solid fa-user-plus"></i> Tambah Personil / Jabatan
+                  </button>
+                  <button class="btn btn-outline btn-sm" onclick="resetOrgStructureToDefault()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset ke Default Kampus
+                  </button>
+                </div>
+              </div>
+
+              <!-- Org Structure Table for Admin inside Tab 7 -->
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 130px;">Tingkatan (Level)</th>
+                      <th>Nama Lengkap & Gelar</th>
+                      <th>Jabatan Struktural</th>
+                      <th>NIP / NIM</th>
+                      <th>Unit Kerja</th>
+                      <th style="text-align: center; width: 190px;">Atur Posisi & Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminOrgTableBody">
+                    <!-- Rendered dynamically -->
+                  </tbody>
                 </table>
               </div>
             </div>
