@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderAllViews();
   updateStatistics();
   setDefaultDates();
+  initSupabaseIntegration();
 });
 
 /* ==========================================================================
@@ -138,6 +139,11 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(STATE.adminConfig));
   localStorage.setItem(STORAGE_KEYS.LABORAN, JSON.stringify(STATE.laboran));
   localStorage.setItem(STORAGE_KEYS.ORG_STRUCTURE, JSON.stringify(STATE.orgStructure));
+
+  // Auto-sync ke Supabase Cloud (jika terhubung & diaktifkan)
+  if (typeof triggerCloudAutoSync === 'function') {
+    triggerCloudAutoSync();
+  }
 }
 
 function resetDefaultData() {
@@ -412,6 +418,11 @@ function switchAdminSubTab(subTabId) {
     const view = document.getElementById('admin-tab-org');
     if (view) view.style.display = 'block';
     renderAdminOrgTable();
+  } else if (subTabId === 'admin-tab-cloud') {
+    document.getElementById('btnAdminTabCloud')?.classList.add('active');
+    const view = document.getElementById('admin-tab-cloud');
+    if (view) view.style.display = 'block';
+    renderAdminCloudTab();
   }
 }
 
@@ -3467,3 +3478,492 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
+
+/* ==========================================================================
+   26. INTEGRASI SUPABASE CLOUD DATABASE & REAL-TIME SYNC
+   ========================================================================== */
+
+let cloudSyncTimeout = null;
+
+const SUPABASE_SCHEMA_SQL_CODE = `-- ==============================================================================
+-- SILAB TADRIS IPA - IAI YAPNAS JENEPONTO
+-- SUPABASE DATABASE SCHEMA & MIGRATION SCRIPT
+-- ==============================================================================
+
+-- 1. TABEL ALAT LABORATORIUM
+CREATE TABLE IF NOT EXISTS public.silab_alat (
+    id TEXT PRIMARY KEY,
+    nama TEXT NOT NULL,
+    kode TEXT,
+    kategori TEXT,
+    merk TEXT,
+    ukuran TEXT,
+    buatan TEXT,
+    stok INTEGER DEFAULT 0,
+    stok_tersedia INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'Tersedia',
+    lokasi TEXT,
+    deskripsi TEXT,
+    gambar TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. TABEL FASILITAS UMUM LABORATORIUM
+CREATE TABLE IF NOT EXISTS public.silab_fasilitas (
+    id TEXT PRIMARY KEY,
+    nama TEXT NOT NULL,
+    kode TEXT,
+    kategori TEXT,
+    stok INTEGER DEFAULT 0,
+    stok_tersedia INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'Tersedia',
+    lokasi TEXT,
+    deskripsi TEXT,
+    gambar TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. TABEL DATA BAHAN KIMIA & REAGEN
+CREATE TABLE IF NOT EXISTS public.silab_bahan_kimia (
+    id TEXT PRIMARY KEY,
+    nama TEXT NOT NULL,
+    rumus TEXT,
+    jumlah NUMERIC DEFAULT 0,
+    satuan TEXT,
+    jenis TEXT,
+    klasifikasi_k3 TEXT,
+    lokasi_simpan TEXT,
+    status TEXT DEFAULT 'Tersedia',
+    kondisi TEXT,
+    kegunaan TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. TABEL CIVITAS AKADEMIKA (DOSEN & MAHASISWA)
+CREATE TABLE IF NOT EXISTS public.silab_members (
+    id TEXT PRIMARY KEY,
+    peran TEXT NOT NULL,
+    nama TEXT NOT NULL,
+    nomor_induk TEXT NOT NULL,
+    jurusan TEXT DEFAULT 'Tadris IPA',
+    status_semester TEXT,
+    telepon TEXT,
+    email TEXT,
+    foto TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. TABEL PEMINJAMAN & PENGEMBALIAN BARANG
+CREATE TABLE IF NOT EXISTS public.silab_loans (
+    tiket TEXT PRIMARY KEY,
+    peran TEXT,
+    nama TEXT NOT NULL,
+    nim TEXT NOT NULL,
+    jurusan TEXT DEFAULT 'Tadris IPA',
+    semester TEXT,
+    mata_kuliah TEXT,
+    dosen_pengampu TEXT,
+    telepon TEXT,
+    tgl_pinjam TEXT,
+    tgl_rencana_kembali TEXT,
+    tgl_kembali_aktual TEXT,
+    items JSONB DEFAULT '[]'::jsonb,
+    status TEXT DEFAULT 'Menunggu Verifikasi',
+    catatan_pengembalian TEXT,
+    foto_pengembalian TEXT,
+    status_kondisi TEXT,
+    verifikator_laboran TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. TABEL PROFIL PRANATA LABORATORIUM (LABORAN)
+CREATE TABLE IF NOT EXISTS public.silab_laboran (
+    id TEXT PRIMARY KEY DEFAULT 'primary',
+    nama TEXT NOT NULL,
+    nip TEXT,
+    jabatan TEXT,
+    kontak TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. TABEL STRUKTUR ORGANISASI LABORATORIUM
+CREATE TABLE IF NOT EXISTS public.silab_org_structure (
+    id TEXT PRIMARY KEY,
+    role TEXT NOT NULL,
+    name TEXT NOT NULL,
+    nip TEXT,
+    unit TEXT,
+    photo TEXT,
+    level INTEGER DEFAULT 1,
+    level_name TEXT,
+    order_num INTEGER DEFAULT 1,
+    parent_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS & POLICIES
+ALTER TABLE public.silab_alat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_fasilitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_bahan_kimia ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_loans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_laboran ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.silab_org_structure ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public Read Alat" ON public.silab_alat FOR SELECT USING (true);
+CREATE POLICY "Public All Alat" ON public.silab_alat FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Fasilitas" ON public.silab_fasilitas FOR SELECT USING (true);
+CREATE POLICY "Public All Fasilitas" ON public.silab_fasilitas FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Bahan" ON public.silab_bahan_kimia FOR SELECT USING (true);
+CREATE POLICY "Public All Bahan" ON public.silab_bahan_kimia FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Members" ON public.silab_members FOR SELECT USING (true);
+CREATE POLICY "Public All Members" ON public.silab_members FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Loans" ON public.silab_loans FOR SELECT USING (true);
+CREATE POLICY "Public All Loans" ON public.silab_loans FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Laboran" ON public.silab_laboran FOR SELECT USING (true);
+CREATE POLICY "Public All Laboran" ON public.silab_laboran FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Public Read Org" ON public.silab_org_structure FOR SELECT USING (true);
+CREATE POLICY "Public All Org" ON public.silab_org_structure FOR ALL USING (true) WITH CHECK (true);
+
+-- STORAGE BUCKET
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('silab-assets', 'silab-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Public Asset Read" ON storage.objects FOR SELECT USING (bucket_id = 'silab-assets');
+CREATE POLICY "Public Asset Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'silab-assets');
+CREATE POLICY "Public Asset Update" ON storage.objects FOR UPDATE USING (bucket_id = 'silab-assets');
+`;
+
+function initSupabaseIntegration() {
+  if (typeof SILAB_SUPABASE === 'undefined') return;
+
+  // Set inputs if available
+  const inputUrl = document.getElementById('inputSupabaseUrl');
+  const inputKey = document.getElementById('inputSupabaseAnonKey');
+  if (inputUrl) inputUrl.value = SILAB_SUPABASE.config.url || '';
+  if (inputKey) inputKey.value = SILAB_SUPABASE.config.anonKey || '';
+
+  // Setup SQL Schema pre
+  const sqlPre = document.getElementById('sqlSchemaPre');
+  if (sqlPre) sqlPre.value = SUPABASE_SCHEMA_SQL_CODE;
+
+  // Check connection health in background without toast
+  checkSupabaseHealthUi(false);
+}
+
+async function checkSupabaseHealthUi(showToastNotification = true) {
+  if (typeof SILAB_SUPABASE === 'undefined') return;
+
+  const badge = document.getElementById('supabaseStatusBadge');
+  const box = document.getElementById('supabaseDiagnosticBox');
+  const topDot = document.getElementById('topCloudDot');
+  const topText = document.getElementById('topCloudText');
+
+  if (badge) {
+    badge.style.background = 'rgba(245, 158, 11, 0.15)';
+    badge.style.color = '#f59e0b';
+    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+    badge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memeriksa Koneksi...';
+  }
+
+  const result = await SILAB_SUPABASE.checkConnection();
+
+  if (result.ok && result.status === 'connected') {
+    if (badge) {
+      badge.style.background = 'rgba(16, 185, 129, 0.15)';
+      badge.style.color = '#10b981';
+      badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Cloud Terhubung';
+    }
+    if (topDot) topDot.style.background = '#10b981';
+    if (topText) topText.textContent = 'Cloud Active';
+
+    if (box) {
+      box.style.background = 'rgba(16, 185, 129, 0.08)';
+      box.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      box.innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 1.3rem; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; color: #10b981; margin-bottom: 4px;">Koneksi Supabase Cloud Berhasil & Aktif!</div>
+            <div style="font-size: 0.83rem; color: var(--text-main); line-height: 1.5;">
+              Aplikasi terhubung ke database cloud <code>\${SILAB_SUPABASE.config.url}</code>. Setiap penambahan atau perubahan data inventaris, civitas, peminjaman, dan struktur organisasi dapat disinkronkan secara online.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (showToastNotification) showToast("🟢 Koneksi ke Supabase Cloud Berhasil Terhubung!", "success");
+
+  } else if (result.status === 'quota_exceeded') {
+    if (badge) {
+      badge.style.background = 'rgba(239, 68, 68, 0.15)';
+      badge.style.color = '#ef4444';
+      badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Kuota Egress Terlampaui';
+    }
+    if (topDot) topDot.style.background = '#ef4444';
+    if (topText) topText.textContent = 'Quota Limit';
+
+    if (box) {
+      box.style.background = 'rgba(239, 68, 68, 0.08)';
+      box.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      box.innerHTML = `
+        <div style="display: flex; gap: 14px; align-items: flex-start;">
+          <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.4rem; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; color: #ef4444; margin-bottom: 4px;">
+              Peringatan Supabase: Batasan Kuota Egress (exceed_egress_quota)
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-main); line-height: 1.55; margin-bottom: 8px;">
+              Proyek Supabase (<code>\${SILAB_SUPABASE.config.url}</code>) saat ini dibatasi oleh Supabase karena telah mencapai batas kuota bandwidth akun (<em>exceed_egress_quota</em>).
+            </div>
+            <div style="font-size: 0.8rem; background: rgba(0,0,0,0.15); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #ef4444;">
+              <strong>Solusi yang Tersedia:</strong><br>
+              <strong>Opsi 1 (Disarankan & Gratis):</strong> Buat <em>New Project</em> gratis di <a href="https://supabase.com/dashboard" target="_blank" style="color: #38bdf8; text-decoration: underline;">supabase.com/dashboard</a> (Free tier dapat 2 proyek baru gratis dengan kuota bersih). Salin URL & Anon Key proyek baru tersebut, lalu tempelkan di form di bawah dan klik <strong>Simpan & Hubungkan</strong>.<br>
+              <strong>Opsi 2:</strong> Buka <em>Project Settings &gt; Billing</em> pada proyek ini di Supabase untuk melepas batasan / spend caps.<br>
+              <em>Catatan: Aplikasi SILAB-IPA saat ini tetap berjalan normal 100% menggunakan LocalStorage mode offline tanpa error bagi pengunjung.</em>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (showToastNotification) showToast("⚠️ Supabase terhalang batas kuota (exceed_egress_quota). Beralih ke LocalStorage.", "warning");
+
+  } else if (result.status === 'tables_missing') {
+    if (badge) {
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.color = '#f59e0b';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      badge.innerHTML = '<i class="fa-solid fa-table-list"></i> Tabel Belum Ada';
+    }
+    if (topDot) topDot.style.background = '#f59e0b';
+    if (topText) topText.textContent = 'Setup Schema';
+
+    if (box) {
+      box.style.background = 'rgba(245, 158, 11, 0.08)';
+      box.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      box.innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <i class="fa-solid fa-circle-exclamation" style="color: #f59e0b; font-size: 1.3rem; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; color: #f59e0b; margin-bottom: 4px;">Koneksi Sukses, Namun Tabel Belum Dibuat!</div>
+            <div style="font-size: 0.83rem; color: var(--text-main); line-height: 1.5;">
+              Domain Supabase terhubung dengan benar, namun tabel <code>silab_alat</code> dkk belum dieksekusi di database. 
+              Klik tombol <strong>"Salin Skrip SQL Schema"</strong> di samping, lalu jalankan di menu <strong>SQL Editor</strong> Supabase Anda.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (showToastNotification) showToast("Koneksi berhasil, namun tabel database Supabase belum dibuat.", "info");
+
+  } else {
+    // Offline / error
+    if (badge) {
+      badge.style.background = 'rgba(100, 116, 139, 0.15)';
+      badge.style.color = '#94a3b8';
+      badge.style.borderColor = 'rgba(100, 116, 139, 0.3)';
+      badge.innerHTML = '<i class="fa-solid fa-hard-drive"></i> LocalStorage Mode';
+    }
+    if (topDot) topDot.style.background = '#94a3b8';
+    if (topText) topText.textContent = 'Local Mode';
+
+    if (box) {
+      box.style.background = 'rgba(100, 116, 139, 0.08)';
+      box.style.borderColor = 'rgba(100, 116, 139, 0.25)';
+      box.innerHTML = `
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <i class="fa-solid fa-hard-drive" style="color: #94a3b8; font-size: 1.3rem; margin-top: 2px;"></i>
+          <div>
+            <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Aplikasi Berjalan dalam Mode LocalStorage Offline</div>
+            <div style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.5;">
+              \${result.message || 'Data inventaris saat ini tersimpan aman di peramban (browser). Anda dapat menghubungkan Supabase kapan saja.'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (showToastNotification) showToast("Status: " + (result.message || "Mode LocalStorage aktif"), "info");
+  }
+}
+
+function handleCloudPillClick() {
+  if (STATE.isAdminLoggedIn) {
+    switchTab('tab-admin');
+    switchAdminSubTab('admin-tab-cloud');
+  } else {
+    showToast(`Status Database: \${SILAB_SUPABASE.statusMessage}. Masuk sebagai Admin untuk mengelola sinkronisasi cloud.`, 'info');
+  }
+}
+
+function renderAdminCloudTab() {
+  const inputUrl = document.getElementById('inputSupabaseUrl');
+  const inputKey = document.getElementById('inputSupabaseAnonKey');
+  if (inputUrl && SILAB_SUPABASE.config.url) inputUrl.value = SILAB_SUPABASE.config.url;
+  if (inputKey && SILAB_SUPABASE.config.anonKey) inputKey.value = SILAB_SUPABASE.config.anonKey;
+}
+
+async function handleSaveSupabaseConfig(e) {
+  if (e) e.preventDefault();
+  const inputUrl = document.getElementById('inputSupabaseUrl');
+  const inputKey = document.getElementById('inputSupabaseAnonKey');
+  if (!inputUrl || !inputKey) return;
+
+  const url = inputUrl.value.trim().replace(/\/+$/, '');
+  const anonKey = inputKey.value.trim();
+
+  if (!url.startsWith('https://')) {
+    alert("Project URL Supabase harus diawali dengan https:// (contoh: https://xyz.supabase.co)");
+    return;
+  }
+
+  SILAB_SUPABASE.saveConfig({ url, anonKey });
+  showToast("Menghubungkan ke Supabase...", "info");
+  await checkSupabaseHealthUi(true);
+}
+
+async function resetSupabaseConfigToDefault() {
+  if (confirm("Kembalikan konfigurasi Supabase ke URL & Kunci bawaan?")) {
+    SILAB_SUPABASE.saveConfig(DEFAULT_SUPABASE_CONFIG);
+    const inputUrl = document.getElementById('inputSupabaseUrl');
+    const inputKey = document.getElementById('inputSupabaseAnonKey');
+    if (inputUrl) inputUrl.value = DEFAULT_SUPABASE_CONFIG.url;
+    if (inputKey) inputKey.value = DEFAULT_SUPABASE_CONFIG.anonKey;
+    showToast("Konfigurasi direset ke pengaturan bawaan.", "info");
+    await checkSupabaseHealthUi(true);
+  }
+}
+
+async function handlePushLocalToSupabase() {
+  if (SILAB_SUPABASE.status === 'quota_exceeded') {
+    alert("Proyek Supabase saat ini terkena pembatasan kuota (exceed_egress_quota). Silakan gunakan proyek Supabase baru yang bersih terlebih dahulu.");
+    return;
+  }
+
+  if (!confirm("Unggah seluruh data lokal (alat, fasilitas, bahan kimia, mahasiswa/dosen, peminjaman, struktur) ke Supabase? Data yang ada di Supabase akan diperbarui/ditambahkan.")) {
+    return;
+  }
+
+  showToast("Mengunggah data ke cloud Supabase...", "info");
+
+  try {
+    const res = await SILAB_SUPABASE.pushAllLocalToCloud(STATE);
+    if (res.errors && res.errors.length > 0) {
+      alert("Sebagian data berhasil, namun ada catatan:\\n\\n" + res.errors.join("\\n") + "\\n\\nPastikan Anda telah menjalankan skrip SQL schema di SQL Editor Supabase.");
+    } else {
+      showToast(`Sukses sinkronkan \${res.alat} Alat, \${res.fasilitas} Fasilitas, \${res.bahan} Bahan, \${res.members} Civitas ke Supabase!`, "success");
+    }
+  } catch (err) {
+    console.error("Gagal sinkronkan ke Supabase:", err);
+    alert("Gagal mengunggah ke Supabase: " + err.message);
+  }
+}
+
+async function handlePullSupabaseToLocal() {
+  if (SILAB_SUPABASE.status === 'quota_exceeded') {
+    alert("Proyek Supabase saat ini terkena batasan kuota (exceed_egress_quota).");
+    return;
+  }
+
+  if (!confirm("Tarik data dari database Supabase dan perbarui data aplikasi di browser Anda?")) {
+    return;
+  }
+
+  showToast("Mengunduh data dari Supabase...", "info");
+
+  try {
+    const cloudData = await SILAB_SUPABASE.pullAllCloudToLocal();
+    let updatedCount = 0;
+
+    if (cloudData.alat && cloudData.alat.length > 0) {
+      STATE.alat = cloudData.alat;
+      updatedCount += cloudData.alat.length;
+    }
+    if (cloudData.fasilitas && cloudData.fasilitas.length > 0) {
+      STATE.fasilitas = cloudData.fasilitas;
+      updatedCount += cloudData.fasilitas.length;
+    }
+    if (cloudData.bahan && cloudData.bahan.length > 0) {
+      STATE.bahan = cloudData.bahan;
+      updatedCount += cloudData.bahan.length;
+    }
+    if (cloudData.members && cloudData.members.length > 0) {
+      STATE.members = cloudData.members;
+      updatedCount += cloudData.members.length;
+    }
+    if (cloudData.loans && cloudData.loans.length > 0) {
+      STATE.loans = cloudData.loans;
+      updatedCount += cloudData.loans.length;
+    }
+    if (cloudData.laboran) {
+      STATE.laboran = cloudData.laboran;
+    }
+    if (cloudData.orgStructure && cloudData.orgStructure.length > 0) {
+      STATE.orgStructure = cloudData.orgStructure;
+    }
+
+    saveState();
+    renderAllViews();
+    showToast(`Berhasil memperbarui \${updatedCount} data dari Supabase!`, "success");
+  } catch (err) {
+    console.error("Gagal menarik data dari Supabase:", err);
+    alert("Gagal mengunduh data: " + err.message);
+  }
+}
+
+function openSupabaseSqlModal() {
+  const modal = document.getElementById('supabaseSqlModal');
+  const sqlPre = document.getElementById('sqlSchemaPre');
+  if (sqlPre) sqlPre.value = SUPABASE_SCHEMA_SQL_CODE;
+  if (modal) modal.classList.add('active');
+}
+
+function copySqlSchemaCode() {
+  const sqlPre = document.getElementById('sqlSchemaPre');
+  if (sqlPre) {
+    sqlPre.select();
+    navigator.clipboard.writeText(sqlPre.value).then(() => {
+      showToast("📋 Seluruh skrip SQL Schema berhasil disalin ke clipboard!", "success");
+    }).catch(() => {
+      document.execCommand('copy');
+      showToast("📋 Skrip SQL berhasil disalin!", "success");
+    });
+  }
+}
+
+function triggerCloudAutoSync() {
+  if (typeof SILAB_SUPABASE === 'undefined') return;
+  if (!SILAB_SUPABASE.client || SILAB_SUPABASE.status !== 'connected' || !SILAB_SUPABASE.config.autoSync) {
+    return;
+  }
+
+  if (cloudSyncTimeout) clearTimeout(cloudSyncTimeout);
+  cloudSyncTimeout = setTimeout(async () => {
+    try {
+      console.log("Background auto-syncing to Supabase...");
+      await SILAB_SUPABASE.pushAllLocalToCloud(STATE);
+      console.log("Background auto-sync finished.");
+    } catch (err) {
+      console.warn("Auto-sync Supabase gagal:", err.message);
+    }
+  }, 2000);
+}
+
