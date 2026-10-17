@@ -3810,8 +3810,17 @@ function handleCloudPillClick() {
     switchTab('tab-admin');
     switchAdminSubTab('admin-tab-cloud');
   } else {
-    showToast(`Status Database: \${SILAB_SUPABASE.statusMessage}. Masuk sebagai Admin untuk mengelola sinkronisasi cloud.`, 'info');
+    showToast(`Status Database: ${SILAB_SUPABASE.statusMessage}. Masuk sebagai Admin untuk mengelola sinkronisasi cloud.`, 'info');
   }
+}
+
+function openAdminCloudTabFromAnywhere() {
+  if (!STATE.isAdminLoggedIn) {
+    triggerAdminAccess();
+    return;
+  }
+  switchTab('tab-admin');
+  switchAdminSubTab('admin-tab-cloud');
 }
 
 function renderAdminCloudTab() {
