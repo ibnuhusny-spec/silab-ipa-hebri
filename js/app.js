@@ -3700,7 +3700,7 @@ async function checkSupabaseHealthUi(showToastNotification = true) {
           <div>
             <div style="font-weight: 700; color: #10b981; margin-bottom: 4px;">Koneksi Supabase Cloud Berhasil & Aktif!</div>
             <div style="font-size: 0.83rem; color: var(--text-main); line-height: 1.5;">
-              Aplikasi terhubung ke database cloud <code>\${SILAB_SUPABASE.config.url}</code>. Setiap penambahan atau perubahan data inventaris, civitas, peminjaman, dan struktur organisasi dapat disinkronkan secara online.
+              Aplikasi terhubung ke database cloud <code style="word-break: break-all; color: #10b981;">${SILAB_SUPABASE.config.url}</code>. Setiap penambahan atau perubahan data inventaris, civitas, peminjaman, dan struktur organisasi dapat disinkronkan secara online.
             </div>
           </div>
         </div>
@@ -3730,7 +3730,7 @@ async function checkSupabaseHealthUi(showToastNotification = true) {
               Peringatan Supabase: Batasan Kuota Egress (exceed_egress_quota)
             </div>
             <div style="font-size: 0.82rem; color: var(--text-main); line-height: 1.55; margin-bottom: 8px;">
-              Proyek Supabase (<code>\${SILAB_SUPABASE.config.url}</code>) saat ini dibatasi oleh Supabase karena telah mencapai batas kuota bandwidth akun (<em>exceed_egress_quota</em>).
+              Proyek Supabase (<code style="word-break: break-all;">${SILAB_SUPABASE.config.url}</code>) saat ini dibatasi oleh Supabase karena telah mencapai batas kuota bandwidth akun (<em>exceed_egress_quota</em>).
             </div>
             <div style="font-size: 0.8rem; background: rgba(0,0,0,0.15); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #ef4444;">
               <strong>Solusi yang Tersedia:</strong><br>
@@ -3794,7 +3794,7 @@ async function checkSupabaseHealthUi(showToastNotification = true) {
           <div>
             <div style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Aplikasi Berjalan dalam Mode LocalStorage Offline</div>
             <div style="font-size: 0.83rem; color: var(--text-muted); line-height: 1.5;">
-              \${result.message || 'Data inventaris saat ini tersimpan aman di peramban (browser). Anda dapat menghubungkan Supabase kapan saja.'}
+              ${result.message || 'Data inventaris saat ini tersimpan aman di peramban (browser). Anda dapat menghubungkan Supabase kapan saja.'}
             </div>
           </div>
         </div>
@@ -3878,7 +3878,7 @@ async function handlePushLocalToSupabase() {
     if (res.errors && res.errors.length > 0) {
       alert("Sebagian data berhasil, namun ada catatan:\\n\\n" + res.errors.join("\\n") + "\\n\\nPastikan Anda telah menjalankan skrip SQL schema di SQL Editor Supabase.");
     } else {
-      showToast(`Sukses sinkronkan \${res.alat} Alat, \${res.fasilitas} Fasilitas, \${res.bahan} Bahan, \${res.members} Civitas ke Supabase!`, "success");
+      showToast(`Sukses sinkronkan ${res.alat} Alat, ${res.fasilitas} Fasilitas, ${res.bahan} Bahan, ${res.members} Civitas ke Supabase!`, "success");
     }
   } catch (err) {
     console.error("Gagal sinkronkan ke Supabase:", err);
@@ -3931,7 +3931,7 @@ async function handlePullSupabaseToLocal() {
 
     saveState();
     renderAllViews();
-    showToast(`Berhasil memperbarui \${updatedCount} data dari Supabase!`, "success");
+    showToast(`Berhasil memperbarui ${updatedCount} data dari Supabase!`, "success");
   } catch (err) {
     console.error("Gagal menarik data dari Supabase:", err);
     alert("Gagal mengunduh data: " + err.message);
