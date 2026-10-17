@@ -1480,15 +1480,19 @@
 
           <!-- Preview & Ubah Gambar -->
           <div class="form-group">
-            <label>Gambar / Foto Alat</label>
+            <label style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+              <span>Gambar / Foto Alat atau Bahan</span>
+              <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;"><i class="fa-solid fa-compress"></i> Auto Kompresi Hemat Ruang (Tetap Tajam)</span>
+            </label>
             <div class="image-upload-preview-box" onclick="document.getElementById('editItemPhotoInput').click()">
               <img id="editItemPreviewImg" src="assets/glassware.jpg" alt="Preview Alat" class="admin-edit-preview-img">
               <div style="font-size: 0.8rem; color: #10b981; font-weight: 600;">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Klik untuk Unggah / Ganti Foto Baru dari Perangkat
               </div>
-              <span style="font-size: 0.72rem; color: var(--text-dim);">Mendukung file JPG, PNG, WEBP</span>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Otomatis dioptimalkan ke ukuran terkecil (~35-70 KB) tanpa mengurangi kejernihan</span>
               <input type="file" id="editItemPhotoInput" accept="image/*" style="display: none;" onchange="handleEditPhotoSelect(event)">
             </div>
+            <div id="editItemCompressBadge" class="image-compress-badge"></div>
             <div style="margin-top: 8px;">
               <input type="text" id="editItemImageUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Atau tempel link URL gambar di sini" oninput="handleEditImageUrlInput(this.value)">
             </div>
@@ -1676,18 +1680,19 @@
 
           <!-- Preview & Ubah Gambar Alat / Fasilitas (Supabase Storage CDN) -->
           <div class="form-group" id="invPhotoFieldGroup">
-            <label style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Gambar / Foto Alat atau Fasilitas</span>
-              <span class="supabase-hint"><i class="fa-solid fa-cloud"></i> Supabase Storage Ready</span>
+            <label style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+              <span>Gambar / Foto Alat atau Bahan</span>
+              <span style="font-size: 0.72rem; color: #10b981; font-weight: 600;"><i class="fa-solid fa-compress"></i> Auto Kompresi Hemat Ruang (Tetap Tajam)</span>
             </label>
             <div class="image-upload-preview-box" onclick="document.getElementById('addInvPhotoFileInput').click()">
               <img id="addInvPreviewImg" src="assets/glassware.jpg" alt="Preview Alat" class="admin-edit-preview-img">
               <div style="font-size: 0.8rem; color: #10b981; font-weight: 600;">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Klik untuk Unggah Foto dari Perangkat
               </div>
-              <span style="font-size: 0.72rem; color: var(--text-dim);">Mendukung JPG, PNG, WEBP</span>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Otomatis dioptimalkan ke ukuran terkecil (~35-70 KB) tanpa mengurangi kejernihan</span>
               <input type="file" id="addInvPhotoFileInput" accept="image/*" style="display: none;" onchange="handleAddInvPhotoSelect(event)">
             </div>
+            <div id="addInvCompressBadge" class="image-compress-badge"></div>
             <div style="margin-top: 8px;">
               <input type="text" id="addInvImageUrl" class="form-control" style="font-size: 0.8rem;" placeholder="Atau tempel link URL foto dari Supabase Storage / CDN di sini" oninput="handleAddInvImageUrlInput(this.value)">
             </div>
@@ -2482,8 +2487,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261017_06"></script>
-  <script src="js/data.js?v=20261017_06"></script>
-  <script src="js/app.js?v=20261017_06"></script>
+  <script src="js/supabase.js?v=20261017_07"></script>
+  <script src="js/data.js?v=20261017_07"></script>
+  <script src="js/app.js?v=20261017_07"></script>
 </body>
 </html>

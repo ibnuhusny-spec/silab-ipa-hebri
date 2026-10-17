@@ -1435,7 +1435,104 @@ function renderAdminInventoryTable() {
   `).join('');
 }
 
+/* ==========================================================================
+   IMAGE OPTIMIZATION & SIZE LIMITER ENGINE (AUTO RESIZE & SMART COMPRESSION)
+   ========================================================================== */
+/**
+ * Kompresi & Pembatas Ukuran Gambar Otomatis (Smart Image Optimizer)
+ * Mengubah foto kamera HP yang besar (3MB - 15MB) menjadi foto berukuran sangat hemat (~35KB - 70KB)
+ * dengan resolusi maksimum 800px dan kompresi berkualitas tinggi (0.80) sehingga penyimpanan tidak bengkak
+ * namun hasil visual di layar HP dan laptop tetap jernih, tajam, dan bebas pecah/blur.
+ *
+ * @param {File|Blob} file File gambar yang dipilih pengguna
+ * @param {Object} options Opsi maxDimension (default 800px) dan quality (default 0.80)
+ * @returns {Promise<{dataUrl: string, originalSizeKB: number, compressedSizeKB: number, width: number, height: number, savingsPercent: number}>}
+ */
+function compressAndOptimizeImage(file, options = {}) {
+  const maxDimension = options.maxDimension || 800;
+  const quality = options.quality !== undefined ? options.quality : 0.80;
+  const mimeType = 'image/jpeg';
+
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error("File yang dipilih bukan format gambar yang didukung (gunakan JPG, PNG, atau WEBP)."));
+      return;
+    }
+
+    // Batas aman ukuran file mentah sebelum diproses di browser (max 25MB)
+    if (file.size > 25 * 1024 * 1024) {
+      reject(new Error("Ukuran file foto terlalu besar (>25MB). Silakan pilih foto lain."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Gagal membaca file gambar dari perangkat Anda."));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Format gambar rusak atau tidak dapat didekode oleh browser."));
+      img.onload = () => {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+
+        // Hitung resize proporsional dengan menjaga aspect ratio asli
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        // Render ke HTML5 Canvas dengan smoothing kualitas tinggi
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        // Beri background putih bersih untuk menangani transparansi PNG
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        // Aktifkan image smoothing berkualitas tinggi (bicubic interpolation)
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Ekspor ke dataURL JPEG dengan kompresi berkualitas tinggi
+        const compressedDataUrl = canvas.toDataURL(mimeType, quality);
+
+        // Hitung estimasi ukuran setelah kompresi
+        const head = `data:${mimeType};base64,`;
+        const sizeInBytes = Math.round((compressedDataUrl.length - head.length) * 3 / 4);
+        const originalSizeKB = Math.round(file.size / 1024);
+        const compressedSizeKB = Math.max(1, Math.round(sizeInBytes / 1024));
+        const savingsPercent = originalSizeKB > compressedSizeKB 
+          ? Math.round(((originalSizeKB - compressedSizeKB) / originalSizeKB) * 100) 
+          : 0;
+
+        resolve({
+          dataUrl: compressedDataUrl,
+          originalSizeKB,
+          compressedSizeKB,
+          width,
+          height,
+          savingsPercent
+        });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function openEditItemModal(type, itemId) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Fitur edit hanya untuk Admin Pengelola.", "warning");
+    return;
+  }
+
   let item = null;
   if (type === 'ALAT') item = STATE.alat.find(a => a.id === itemId);
   else if (type === 'FASILITAS') item = STATE.fasilitas.find(f => f.id === itemId);
@@ -1458,19 +1555,39 @@ function openEditItemModal(type, itemId) {
   preview.src = item.gambar || 'assets/glassware.jpg';
   STATE.editPhotoBase64 = null;
 
+  const badge = document.getElementById('editItemCompressBadge');
+  if (badge) badge.style.display = 'none';
+
   document.getElementById('editItemModal').classList.add('active');
 }
 
-function handleEditPhotoSelect(event) {
+async function handleEditPhotoSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    STATE.editPhotoBase64 = e.target.result;
-    document.getElementById('editItemPreviewImg').src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  const badge = document.getElementById('editItemCompressBadge');
+  if (badge) {
+    badge.style.display = 'block';
+    badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan & memperkecil foto...';
+  }
+
+  try {
+    const result = await compressAndOptimizeImage(file, { maxDimension: 800, quality: 0.80 });
+    STATE.editPhotoBase64 = result.dataUrl;
+
+    const preview = document.getElementById('editItemPreviewImg');
+    if (preview) preview.src = result.dataUrl;
+
+    if (badge) {
+      badge.style.display = 'block';
+      badge.innerHTML = `<i class="fa-solid fa-bolt"></i> Dioptimasi: <strong>${result.originalSizeKB} KB</strong> ➔ <strong>${result.compressedSizeKB} KB</strong> (Hemat ${result.savingsPercent}%, ${result.width}x${result.height}px - Tetap Tajam)`;
+    }
+    showToast(`Foto dioptimalkan ke ${result.compressedSizeKB} KB (hemat ${result.savingsPercent}%). Kualitas tetap tajam & jernih.`, "success");
+  } catch (err) {
+    console.error("Gagal optimasi gambar:", err);
+    showToast(err.message || "Gagal memproses gambar.", "error");
+    if (badge) badge.style.display = 'none';
+  }
 }
 
 function handleEditImageUrlInput(url) {
@@ -1983,18 +2100,19 @@ function previewAddMemberPhoto(url) {
   }
 }
 
-function handleAddMemberPhotoFile(event) {
+async function handleAddMemberPhotoFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    STATE.tempAddMemberPhoto = e.target.result;
+  try {
+    const result = await compressAndOptimizeImage(file, { maxDimension: 400, quality: 0.80 });
+    STATE.tempAddMemberPhoto = result.dataUrl;
     const preview = document.getElementById('addMemberPhotoPreview');
-    if (preview) preview.src = e.target.result;
-    showToast("Foto berhasil dimuat dari perangkat.", "success");
-  };
-  reader.readAsDataURL(file);
+    if (preview) preview.src = result.dataUrl;
+    showToast(`Foto civitas dioptimalkan ke ${result.compressedSizeKB} KB (tajam & hemat ruang).`, "success");
+  } catch (err) {
+    showToast(err.message || "Gagal memproses foto civitas.", "error");
+  }
 }
 
 function resetAddMemberPhoto() {
@@ -2022,18 +2140,19 @@ function previewEditMemberPhoto(url) {
   }
 }
 
-function handleEditMemberPhotoFile(event) {
+async function handleEditMemberPhotoFile(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    STATE.tempEditMemberPhoto = e.target.result;
+  try {
+    const result = await compressAndOptimizeImage(file, { maxDimension: 400, quality: 0.80 });
+    STATE.tempEditMemberPhoto = result.dataUrl;
     const preview = document.getElementById('editMemberPhotoPreview');
-    if (preview) preview.src = e.target.result;
-    showToast("Foto baru berhasil dimuat dari perangkat.", "success");
-  };
-  reader.readAsDataURL(file);
+    if (preview) preview.src = result.dataUrl;
+    showToast(`Foto baru dioptimalkan ke ${result.compressedSizeKB} KB (tajam & hemat ruang).`, "success");
+  } catch (err) {
+    showToast(err.message || "Gagal memproses foto civitas.", "error");
+  }
 }
 
 function resetEditMemberPhoto() {
@@ -3203,18 +3322,22 @@ function openReturnModal(ticket) {
   document.getElementById('returnFormModal').classList.add('active');
 }
 
-function handleReturnPhotoSelect(event) {
+async function handleReturnPhotoSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    STATE.returnPhotoBase64 = e.target.result;
+  try {
+    const result = await compressAndOptimizeImage(file, { maxDimension: 800, quality: 0.80 });
+    STATE.returnPhotoBase64 = result.dataUrl;
     const preview = document.getElementById('returnPhotoPreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+    if (preview) {
+      preview.src = result.dataUrl;
+      preview.style.display = 'block';
+    }
+    showToast(`Foto kondisi fisik dioptimalkan ke ${result.compressedSizeKB} KB (tajam & hemat memori).`, "success");
+  } catch (err) {
+    showToast(err.message || "Gagal memproses foto pengembalian.", "error");
+  }
 }
 
 function submitReturnProof() {
@@ -3381,7 +3504,16 @@ function requestChemicalForPractice(chemName) {
 }
 
 function openAddInventoryModal() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan login terlebih dahulu.", "warning");
+    return;
+  }
   document.getElementById('newInventoryForm').reset();
+  STATE.tempAddInvPhoto = null;
+  const preview = document.getElementById('addInvPreviewImg');
+  if (preview) preview.src = 'assets/glassware.jpg';
+  const badge = document.getElementById('addInvCompressBadge');
+  if (badge) badge.style.display = 'none';
   toggleAddInventoryFields();
   document.getElementById('addInventoryModal').classList.add('active');
 }
@@ -3403,18 +3535,33 @@ function toggleAddInventoryFields() {
   }
 }
 
-function handleAddInvPhotoSelect(event) {
+async function handleAddInvPhotoSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    STATE.tempAddInvPhoto = e.target.result;
+  const badge = document.getElementById('addInvCompressBadge');
+  if (badge) {
+    badge.style.display = 'block';
+    badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan & memperkecil foto...';
+  }
+
+  try {
+    const result = await compressAndOptimizeImage(file, { maxDimension: 800, quality: 0.80 });
+    STATE.tempAddInvPhoto = result.dataUrl;
+
     const preview = document.getElementById('addInvPreviewImg');
-    if (preview) preview.src = e.target.result;
-    showToast("Foto alat berhasil dimuat.", "success");
-  };
-  reader.readAsDataURL(file);
+    if (preview) preview.src = result.dataUrl;
+
+    if (badge) {
+      badge.style.display = 'block';
+      badge.innerHTML = `<i class="fa-solid fa-bolt"></i> Dioptimasi: <strong>${result.originalSizeKB} KB</strong> ➔ <strong>${result.compressedSizeKB} KB</strong> (Hemat ${result.savingsPercent}%, ${result.width}x${result.height}px - Tetap Tajam)`;
+    }
+    showToast(`Foto berhasil dioptimalkan ke ${result.compressedSizeKB} KB (hemat ${result.savingsPercent}%). Kualitas gambar tetap jernih & tajam.`, "success");
+  } catch (err) {
+    console.error("Gagal optimasi foto alat:", err);
+    showToast(err.message || "Gagal memproses gambar.", "error");
+    if (badge) badge.style.display = 'none';
+  }
 }
 
 function handleAddInvImageUrlInput(url) {

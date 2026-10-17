@@ -792,6 +792,24 @@ img, picture, svg, video, canvas {
   box-shadow: var(--shadow-sm);
 }
 
+.image-compress-badge {
+  display: none;
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  text-align: center;
+  line-height: 1.4;
+  animation: fadeIn 0.25s ease;
+}
+
+.image-compress-badge strong {
+  color: #10b981;
+}
+
 /* ==========================================================================
    7. ITEM CARDS & INVENTORY GRIDS
    ========================================================================== */
