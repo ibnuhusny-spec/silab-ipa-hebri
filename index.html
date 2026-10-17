@@ -335,12 +335,6 @@
               <h2><i class="fa-solid fa-sitemap" style="color: #38bdf8;"></i> Struktur Organisasi Laboratorium</h2>
               <p>Pengelola Laboratorium Terpadu Jurusan Tadris IPA - Fakultas Tarbiyyah IAI YAPNAS Jeneponto</p>
             </div>
-            <div class="header-action-btn-wrap" style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <!-- Tombol Edit Khusus Admin (Tersembunyi untuk Publik) -->
-              <button class="btn btn-outline btn-sm admin-only-action" onclick="openOrgStructureManager()" id="btnOpenOrgManagerHeader" title="Kelola susunan struktur organisasi" style="display: none;">
-                <i class="fa-solid fa-diagram-project" style="color: #38bdf8;"></i> Kelola Bagan Organisasi
-              </button>
-            </div>
           </div>
 
           <!-- Org Tree Wrapper with Controls -->
@@ -360,16 +354,6 @@
                 <span id="orgZoomLabel" style="font-weight: 600; min-width: 44px; text-align: center;">100%</span>
                 <button type="button" class="btn-zoom" onclick="zoomOrgTree(0.1)" title="Perbesar Zoom"><i class="fa-solid fa-plus"></i></button>
                 <button type="button" class="btn-zoom" onclick="resetOrgTreeZoom()" title="Reset Tampilan (100%)"><i class="fa-solid fa-rotate-right"></i></button>
-              </div>
-
-              <!-- Tombol Admin Tersembunyi untuk Publik -->
-              <div class="org-admin-controls-header admin-only-action" style="display: none; gap: 8px; flex-wrap: wrap;">
-                <button type="button" class="btn btn-primary btn-sm" onclick="openAddOrgPersonModal()">
-                  <i class="fa-solid fa-user-plus"></i> Tambah Jabatan
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="openOrgStructureManager()">
-                  <i class="fa-solid fa-sliders"></i> Atur Bentuk Susunan
-                </button>
               </div>
             </div>
 
@@ -862,6 +846,9 @@
                     <button class="btn btn-outline btn-sm" onclick="openEditLaboranModal()" title="Ubah Nama & Data Pranata Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(16, 185, 129, 0.4); color: #10b981;">
                       <i class="fa-solid fa-user-pen"></i> Edit Nama / Profil
                     </button>
+                    <button class="btn btn-outline btn-sm" onclick="openChangeAdminCredentialsModal()" title="Ubah Email & PIN Masuk Admin" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(245, 158, 11, 0.6); color: #fbbf24; background: rgba(245, 158, 11, 0.1);">
+                      <i class="fa-solid fa-key"></i> Ganti Email & PIN
+                    </button>
                     <button class="btn btn-outline btn-sm" onclick="openOrgStructureManager()" title="Kelola Struktur Organisasi Lab" style="padding: 2px 8px; font-size: 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
                       <i class="fa-solid fa-sitemap"></i> Struktur Organisasi
                     </button>
@@ -911,6 +898,9 @@
               </button>
               <button class="admin-tab-btn" id="btnAdminTabCloud" onclick="switchAdminSubTab('admin-tab-cloud')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1.5px solid #38bdf8; font-weight: 700;">
                 <i class="fa-solid fa-cloud"></i> Database Cloud (Supabase)
+              </button>
+              <button class="admin-tab-btn" id="btnAdminTabSecurity" onclick="switchAdminSubTab('admin-tab-security')" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1.5px solid rgba(245, 158, 11, 0.6); font-weight: 700;">
+                <i class="fa-solid fa-shield-halved"></i> Ganti Email & PIN Admin
               </button>
             </div>
 
@@ -1214,6 +1204,126 @@
               </div>
             </div>
 
+            <!-- SUB-TAB 7: KEAMANAN AKUN PENGELOLA & GANTI EMAIL / PIN ADMIN -->
+            <div id="admin-tab-security" class="admin-sub-view" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                  <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-shield-halved" style="color: #fbbf24;"></i> Pengaturan Akun & Keamanan Admin
+                  </div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">
+                    Kelola alamat Email login dan PIN / Password resmi untuk mengakses Dashboard Laboran & Pengelola Lab IPA.
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                <!-- Card Form Ganti Email & PIN -->
+                <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 22px;">
+                  <h4 style="font-size: 1rem; font-weight: 700; color: #38bdf8; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-key"></i> Form Pembaruan Email & PIN / Password
+                  </h4>
+                  <form id="adminSecurityForm" onsubmit="handleChangeAdminCredentials(event, false)">
+                    <div class="form-group">
+                      <label style="font-size: 0.82rem; font-weight: 600;">Email Akun Admin Saat Ini</label>
+                      <input type="text" id="secCurrentEmailDisplay" class="form-control" readonly style="background: var(--bg-surface-elevated); color: var(--text-muted); cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="secNewEmail" style="font-size: 0.82rem; font-weight: 600;">Email Login Baru <span class="req">*</span></label>
+                      <div style="position: relative;">
+                        <input type="email" id="secNewEmail" class="form-control" required placeholder="Contoh: nama.admin@kampus.ac.id" style="padding-left: 36px;">
+                        <i class="fa-solid fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+                      </div>
+                      <small style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px; display: block;">Email ini akan digunakan saat login berikutnya.</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="secNewPin" style="font-size: 0.82rem; font-weight: 600;">PIN / Password Baru <span class="req">*</span></label>
+                      <div class="password-field-wrap">
+                        <input type="password" id="secNewPin" class="form-control" required placeholder="PIN angka atau kombinasi password..." style="padding-left: 36px; padding-right: 42px;">
+                        <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+                        <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('secNewPin', this)" title="Lihat/Sembunyikan">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+                      </div>
+                      <small style="font-size: 0.74rem; color: #38bdf8; margin-top: 4px; display: block;">Bisa berupa PIN angka (misal: 123456) atau kata sandi teks bebas.</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="secConfirmNewPin" style="font-size: 0.82rem; font-weight: 600;">Konfirmasi PIN / Password Baru <span class="req">*</span></label>
+                      <div class="password-field-wrap">
+                        <input type="password" id="secConfirmNewPin" class="form-control" required placeholder="Ketik ulang PIN / password baru..." style="padding-left: 36px; padding-right: 42px;">
+                        <i class="fa-solid fa-check-double" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+                        <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('secConfirmNewPin', this)" title="Lihat/Sembunyikan">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px; border-top: 1px dashed var(--border-subtle); padding-top: 16px;">
+                      <label for="secCurrentPassVerify" style="font-size: 0.82rem; font-weight: 600; color: #fbbf24;">Verifikasi: Masukkan PIN / Password Saat Ini <span class="req">*</span></label>
+                      <div class="password-field-wrap">
+                        <input type="password" id="secCurrentPassVerify" class="form-control" required placeholder="Masukkan PIN/password lama untuk konfirmasi..." style="padding-left: 36px; padding-right: 42px;">
+                        <i class="fa-solid fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
+                        <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('secCurrentPassVerify', this)" title="Lihat/Sembunyikan">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                      <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Email & PIN Baru
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="resetAdminCredentialsToDefault()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">
+                        <i class="fa-solid fa-rotate-left"></i> Reset ke Default
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <!-- Info Status Keamanan Card -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px;">
+                    <h4 style="font-size: 0.95rem; font-weight: 700; color: #10b981; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                      <i class="fa-solid fa-circle-check"></i> Status Keamanan Akun
+                    </h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.82rem;">
+                      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Email Aktif:</span>
+                        <strong id="secStatusEmail" style="color: var(--text-main); font-family: var(--font-mono);">-</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Tipe Akses:</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">Kepala & Pranata Lab</span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                        <span style="color: var(--text-muted);">Perlindungan PIN:</span>
+                        <span style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-lock"></i> Aktif & Terlindungi</span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; padding-bottom: 4px;">
+                        <span style="color: var(--text-muted);">Penyimpanan:</span>
+                        <span style="color: #38bdf8; font-weight: 600;">LocalStorage + Cloud Sync</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 18px;">
+                    <h5 style="color: #38bdf8; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                      <i class="fa-solid fa-circle-info"></i> Petunjuk Keamanan & Tips:
+                    </h5>
+                    <ul style="font-size: 0.78rem; color: var(--text-muted); padding-left: 18px; margin: 0; line-height: 1.6;">
+                      <li>Anda dapat menggunakan angka numerik sederhana sebagai <strong>PIN (contoh: 123456, 202688)</strong> untuk kemudahan input di HP.</li>
+                      <li>Atau gunakan password kombinasi huruf dan angka untuk keamanan maksimal.</li>
+                      <li>Setelah disimpan, Anda langsung dapat login dengan email dan PIN baru tersebut.</li>
+                      <li>Tersedia tombol reset ke kredensial awal kampus jika diperlukan sewaktu-waktu.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </section>
@@ -1278,9 +1388,9 @@
           </div>
 
           <div class="form-group">
-            <label for="adminPasswordInput" style="font-size: 0.82rem; font-weight: 600;">Password Pengelola <span class="req">*</span></label>
+            <label for="adminPasswordInput" style="font-size: 0.82rem; font-weight: 600;">PIN / Password Pengelola <span class="req">*</span></label>
             <div class="password-field-wrap">
-              <input type="password" id="adminPasswordInput" class="form-control" placeholder="Masukkan password kuat..." required style="padding-left: 36px; padding-right: 42px;">
+              <input type="password" id="adminPasswordInput" class="form-control" placeholder="Masukkan PIN atau password..." required style="padding-left: 36px; padding-right: 42px;">
               <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.9rem;"></i>
               <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('adminPasswordInput', this)" title="Lihat/Sembunyikan Password">
                 <i class="fa-solid fa-eye"></i>
@@ -1289,15 +1399,19 @@
           </div>
 
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 16px; font-size: 0.78rem;">
-            <div style="color: #10b981; font-weight: 700; margin-bottom: 4px;">
-              <i class="fa-solid fa-circle-info"></i> Akun Pengelola Resmi Default:
+            <div style="color: #10b981; font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <span><i class="fa-solid fa-circle-info"></i> Info Masuk Pengelola:</span>
+              <span style="font-size: 0.7rem; color: #38bdf8;">(Dapat diubah di Dashboard)</span>
             </div>
-            <div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all;">
+            <div style="color: var(--text-muted); font-size: 0.75rem; line-height: 1.5;">
+              Gunakan email & PIN yang telah Anda atur, atau akun default resmi laboratorium:
+            </div>
+            <div style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all; margin-top: 4px;">
               Email: <strong>admin.lab@iaiyapnas.ac.id</strong><br>
-              Password: <strong>Yapnas@LabIPA2026!</strong>
+              PIN / Pass: <strong>Yapnas@LabIPA2026!</strong>
             </div>
             <button type="button" class="btn btn-outline btn-sm" style="margin-top: 8px; width: 100%; font-size: 0.74rem; padding: 4px 8px;" onclick="fillDefaultAdminCredentials()">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Akun Resmi Default
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gunakan Akun Aktif Pengelola
             </button>
           </div>
 
@@ -2256,6 +2370,82 @@
     </div>
   </div>
 
+  <!-- ======================================================================
+       MODAL: GANTI EMAIL & PIN / PASSWORD ADMIN
+       ====================================================================== -->
+  <div class="modal-backdrop" id="changeAdminCredentialsModal">
+    <div class="modal-dialog" style="max-width: 460px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-key" style="color: #fbbf24;"></i>
+          <span>Ganti Email & PIN Masuk Admin</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('changeAdminCredentialsModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">
+          Ubah email login dan kode PIN atau password untuk akun Pengelola/Laboran. Kredensial baru ini akan langsung aktif.
+        </p>
+
+        <form onsubmit="handleChangeAdminCredentials(event, true)">
+          <div class="form-group">
+            <label style="font-size: 0.8rem; font-weight: 600;">Email Admin Saat Ini</label>
+            <input type="text" id="modalSecCurrentEmailDisplay" class="form-control" readonly style="background: var(--bg-surface-elevated); color: var(--text-muted); cursor: not-allowed; font-size: 0.85rem;">
+          </div>
+
+          <div class="form-group">
+            <label for="modalSecNewEmail" style="font-size: 0.8rem; font-weight: 600;">Email Login Baru <span class="req">*</span></label>
+            <div style="position: relative;">
+              <input type="email" id="modalSecNewEmail" class="form-control" required placeholder="nama.admin@kampus.ac.id" style="padding-left: 36px; font-size: 0.85rem;">
+              <i class="fa-solid fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem;"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="modalSecNewPin" style="font-size: 0.8rem; font-weight: 600;">PIN / Password Baru <span class="req">*</span></label>
+            <div class="password-field-wrap">
+              <input type="password" id="modalSecNewPin" class="form-control" required placeholder="PIN angka atau password baru..." style="padding-left: 36px; padding-right: 42px; font-size: 0.85rem;">
+              <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem;"></i>
+              <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('modalSecNewPin', this)" title="Lihat/Sembunyikan">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+            <small style="font-size: 0.73rem; color: #38bdf8; margin-top: 4px; display: block;">Bisa berupa PIN angka (contoh: 123456) atau kombinasi teks bebas.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="modalSecConfirmNewPin" style="font-size: 0.8rem; font-weight: 600;">Konfirmasi PIN / Password Baru <span class="req">*</span></label>
+            <div class="password-field-wrap">
+              <input type="password" id="modalSecConfirmNewPin" class="form-control" required placeholder="Ketik ulang PIN / password baru..." style="padding-left: 36px; padding-right: 42px; font-size: 0.85rem;">
+              <i class="fa-solid fa-check-double" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem;"></i>
+              <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('modalSecConfirmNewPin', this)" title="Lihat/Sembunyikan">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px; border-top: 1px dashed var(--border-subtle); padding-top: 14px;">
+            <label for="modalSecCurrentPassVerify" style="font-size: 0.8rem; font-weight: 600; color: #fbbf24;">Verifikasi: PIN / Password Lama Saat Ini <span class="req">*</span></label>
+            <div class="password-field-wrap">
+              <input type="password" id="modalSecCurrentPassVerify" class="form-control" required placeholder="Masukkan PIN/password lama..." style="padding-left: 36px; padding-right: 42px; font-size: 0.85rem;">
+              <i class="fa-solid fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem;"></i>
+              <button type="button" class="btn-password-toggle" onclick="togglePasswordVisibility('modalSecCurrentPassVerify', this)" title="Lihat/Sembunyikan">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('changeAdminCredentialsModal')">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-floppy-disk"></i> Simpan Kredensial Baru
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal SQL Schema Supabase -->
   <div class="modal-backdrop" id="supabaseSqlModal">
     <div class="modal-dialog" style="max-width: 780px;">
@@ -2292,8 +2482,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261017_05"></script>
-  <script src="js/data.js?v=20261017_05"></script>
-  <script src="js/app.js?v=20261017_05"></script>
+  <script src="js/supabase.js?v=20261017_06"></script>
+  <script src="js/data.js?v=20261017_06"></script>
+  <script src="js/app.js?v=20261017_06"></script>
 </body>
 </html>

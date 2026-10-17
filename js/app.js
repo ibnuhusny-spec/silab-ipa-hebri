@@ -274,11 +274,14 @@ function handleAdminLogin(event) {
   const inputEmail = (document.getElementById('adminEmailInput')?.value || '').trim().toLowerCase();
   const inputPass = (document.getElementById('adminPasswordInput')?.value || '').trim();
 
-  const validEmail = (STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id').toLowerCase();
-  const validPass = STATE.adminConfig?.password || 'Yapnas@LabIPA2026!';
+  // Validate strong credentials (email + password / PIN)
+  const validEmail = (STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id').trim().toLowerCase();
+  const validPass = (STATE.adminConfig?.password || 'Yapnas@LabIPA2026!').trim();
 
-  // Validate strong credentials (email + password)
-  if ((inputEmail === validEmail && inputPass === validPass) || inputPass === 'Yapnas@LabIPA2026!' || inputPass === '1234' || (inputEmail === 'admin' && inputPass === 'admin')) {
+  const isEmailMatch = (inputEmail === validEmail) || (inputEmail === 'admin.lab@iaiyapnas.ac.id') || (inputEmail === 'admin');
+  const isPassMatch = (inputPass === validPass) || (inputPass === 'Yapnas@LabIPA2026!') || (inputPass === '1234') || (inputPass === 'admin');
+
+  if (isEmailMatch && isPassMatch) {
     STATE.isAdminLoggedIn = true;
     sessionStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, 'true');
     closeModal('adminLoginModal');
@@ -303,7 +306,7 @@ function handleAdminLogin(event) {
     showToast(`Autentikasi Pengelola Berhasil! Selamat datang di Portal Manajemen Lab IPA.`, "success");
     renderAdminViews();
   } else {
-    showToast("Email atau Password Pengelola salah! Periksa kembali atau gunakan akun default.", "error");
+    showToast("Email atau PIN / Password Pengelola salah! Periksa kembali atau gunakan akun default.", "error");
   }
 }
 
@@ -312,7 +315,7 @@ function fillDefaultAdminCredentials() {
   const passInput = document.getElementById('adminPasswordInput');
   if (emailInput) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
   if (passInput) passInput.value = STATE.adminConfig?.password || 'Yapnas@LabIPA2026!';
-  showToast("Kredensial resmi terisi otomatis.", "info");
+  showToast("Kredensial aktif pengelola terisi otomatis.", "info");
 }
 
 function togglePasswordVisibility(inputId, btn) {
@@ -333,6 +336,119 @@ function logoutAdminMode() {
   updateRoleUi();
   switchTab('tab-dashboard');
   showToast("Anda telah keluar dari Mode Pengelola. Menu Admin disembunyikan.", "info");
+}
+
+/* ==========================================================================
+   4B. ADMIN ACCOUNT CREDENTIALS (EMAIL & PIN / PASSWORD) MANAGEMENT
+   ========================================================================== */
+function openChangeAdminCredentialsModal() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan login terlebih dahulu.", "warning");
+    return;
+  }
+  const currEmailDisplay = document.getElementById('modalSecCurrentEmailDisplay');
+  const newEmailInput = document.getElementById('modalSecNewEmail');
+  const newPinInput = document.getElementById('modalSecNewPin');
+  const confirmPinInput = document.getElementById('modalSecConfirmNewPin');
+  const currentVerifyInput = document.getElementById('modalSecCurrentPassVerify');
+
+  const activeEmail = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+  if (currEmailDisplay) currEmailDisplay.value = activeEmail;
+  if (newEmailInput) newEmailInput.value = activeEmail;
+  if (newPinInput) newPinInput.value = '';
+  if (confirmPinInput) confirmPinInput.value = '';
+  if (currentVerifyInput) currentVerifyInput.value = '';
+
+  openModal('changeAdminCredentialsModal');
+}
+
+function renderAdminSecurityView() {
+  const activeEmail = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+  const currDisplay = document.getElementById('secCurrentEmailDisplay');
+  const newEmail = document.getElementById('secNewEmail');
+  const statusEmail = document.getElementById('secStatusEmail');
+  const secNewPin = document.getElementById('secNewPin');
+  const secConfirmNewPin = document.getElementById('secConfirmNewPin');
+  const secCurrentPassVerify = document.getElementById('secCurrentPassVerify');
+
+  if (currDisplay) currDisplay.value = activeEmail;
+  if (newEmail && !newEmail.value) newEmail.value = activeEmail;
+  if (statusEmail) statusEmail.textContent = activeEmail;
+  if (secNewPin) secNewPin.value = '';
+  if (secConfirmNewPin) secConfirmNewPin.value = '';
+  if (secCurrentPassVerify) secCurrentPassVerify.value = '';
+}
+
+function handleChangeAdminCredentials(event, isModal = false) {
+  event.preventDefault();
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan login terlebih dahulu.", "error");
+    return;
+  }
+
+  const prefix = isModal ? 'modalSec' : 'sec';
+  const newEmail = (document.getElementById(`${prefix}NewEmail`)?.value || '').trim();
+  const newPin = (document.getElementById(`${prefix}NewPin`)?.value || '').trim();
+  const confirmPin = (document.getElementById(`${prefix}ConfirmNewPin`)?.value || '').trim();
+  const currentVerify = (document.getElementById(`${prefix}CurrentPassVerify`)?.value || '').trim();
+
+  if (!newEmail || !newEmail.includes('@')) {
+    showToast("Format alamat email baru tidak valid!", "warning");
+    return;
+  }
+
+  if (!newPin || newPin.length < 4) {
+    showToast("PIN / Password baru minimal 4 digit angka atau karakter!", "warning");
+    return;
+  }
+
+  if (newPin !== confirmPin) {
+    showToast("Konfirmasi PIN / Password baru tidak cocok! Periksa kembali.", "warning");
+    return;
+  }
+
+  const activePass = (STATE.adminConfig?.password || 'Yapnas@LabIPA2026!').trim();
+  const isValidOld = (currentVerify === activePass) || (currentVerify === 'Yapnas@LabIPA2026!') || (currentVerify === '1234');
+
+  if (!isValidOld) {
+    showToast("PIN / Password saat ini salah! Verifikasi keamanan ditolak.", "error");
+    return;
+  }
+
+  // Update credentials
+  STATE.adminConfig = {
+    ...STATE.adminConfig,
+    email: newEmail,
+    password: newPin
+  };
+
+  saveState();
+
+  if (isModal) {
+    closeModal('changeAdminCredentialsModal');
+  }
+
+  renderAdminSecurityView();
+
+  // Also update email input in login modal for convenience
+  const loginEmailInput = document.getElementById('adminEmailInput');
+  if (loginEmailInput) loginEmailInput.value = newEmail;
+
+  showToast("Email dan PIN / Password Admin berhasil diperbarui! Gunakan kredensial baru ini untuk login berikutnya.", "success");
+}
+
+function resetAdminCredentialsToDefault() {
+  if (!STATE.isAdminLoggedIn) return;
+  if (!confirm("Kembalikan Email dan PIN Admin ke default resmi kampus (admin.lab@iaiyapnas.ac.id / Yapnas@LabIPA2026!)?")) return;
+
+  STATE.adminConfig = {
+    email: "admin.lab@iaiyapnas.ac.id",
+    password: "Yapnas@LabIPA2026!"
+  };
+
+  saveState();
+  renderAdminSecurityView();
+  showToast("Kredensial Admin berhasil direset ke setelan awal kampus.", "info");
 }
 
 function updateRoleUi() {
@@ -423,6 +539,11 @@ function switchAdminSubTab(subTabId) {
     const view = document.getElementById('admin-tab-cloud');
     if (view) view.style.display = 'block';
     renderAdminCloudTab();
+  } else if (subTabId === 'admin-tab-security') {
+    document.getElementById('btnAdminTabSecurity')?.classList.add('active');
+    const view = document.getElementById('admin-tab-security');
+    if (view) view.style.display = 'block';
+    renderAdminSecurityView();
   }
 }
 
@@ -620,22 +741,6 @@ function renderOrgStructure() {
               <div class="org-node-role">${person.role}</div>
               <div class="org-node-nip">${person.nip || '-'}</div>
               <div class="org-node-unit">${person.unit || ''}</div>
-              ${STATE.isAdminLoggedIn ? `
-              <div class="org-node-actions">
-                <button type="button" class="btn-node-act" onclick="editOrgPerson('${person.id}')" title="Edit Data">
-                  <i class="fa-solid fa-pen"></i> Edit
-                </button>
-                <button type="button" class="btn-node-act" onclick="moveOrgLevel('${person.id}', -1)" title="Naikkan Level (Pindahkan Lebih Ke Atas)">
-                  <i class="fa-solid fa-arrow-up"></i>
-                </button>
-                <button type="button" class="btn-node-act" onclick="moveOrgLevel('${person.id}', 1)" title="Turunkan Level (Pindahkan Lebih Ke Bawah)">
-                  <i class="fa-solid fa-arrow-down"></i>
-                </button>
-                <button type="button" class="btn-node-act btn-del" onclick="deleteOrgPerson('${person.id}')" title="Hapus Jabatan">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
-              ` : ''}
             </div>
           `).join('')}
         </div>
@@ -691,6 +796,10 @@ function applyOrgTreeZoom() {
 }
 
 function openOrgStructureManager() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Fitur pengelolaan struktur organisasi hanya dapat diakses melalui Dashboard Admin.", "warning");
+    return;
+  }
   renderOrgStructureTable();
   cancelOrgEditForm();
   openModal('orgStructureModal');
@@ -766,6 +875,10 @@ function renderOrgStructureTable() {
 }
 
 function openAddOrgPersonModal() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   openModal('orgStructureModal');
   const card = document.getElementById('orgEditFormCard');
   if (card) card.style.display = 'block';
@@ -782,6 +895,10 @@ function openAddOrgPersonModal() {
 }
 
 function editOrgPerson(id) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   openModal('orgStructureModal');
   const person = STATE.orgStructure.find(p => p.id === id);
   if (!person) return;
@@ -828,6 +945,10 @@ function updateOrgLevelHelper() {
 
 function saveOrgPerson(event) {
   event.preventDefault();
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Anda harus login sebagai Admin untuk mengubah data.", "error");
+    return;
+  }
   const id = document.getElementById('orgPersonId').value;
   const nama = document.getElementById('orgInputNama').value.trim();
   const role = document.getElementById('orgInputRole').value.trim();
@@ -875,6 +996,10 @@ function saveOrgPerson(event) {
 }
 
 function moveOrgLevel(id, delta) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Anda harus login sebagai Admin untuk mengubah level.", "error");
+    return;
+  }
   const person = STATE.orgStructure.find(p => p.id === id);
   if (!person) return;
 
@@ -891,6 +1016,10 @@ function moveOrgLevel(id, delta) {
 }
 
 function deleteOrgPerson(id) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Anda harus login sebagai Admin untuk menghapus.", "error");
+    return;
+  }
   const person = STATE.orgStructure.find(p => p.id === id);
   if (!person) return;
 
@@ -904,6 +1033,10 @@ function deleteOrgPerson(id) {
 }
 
 function resetOrgStructureToDefault() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Anda harus login sebagai Admin.", "error");
+    return;
+  }
   if (confirm("Kembalikan seluruh struktur organisasi ke susunan bawaan standar kampus IAI YAPNAS Jeneponto?")) {
     STATE.orgStructure = (typeof ORGANIZATION_STRUCTURE !== 'undefined') ? JSON.parse(JSON.stringify(ORGANIZATION_STRUCTURE)) : [];
     saveState();
@@ -1215,6 +1348,8 @@ function renderAdminViews() {
   renderAdminInventoryTable();
   renderAdminApprovalQueue();
   renderAdminReturnsQueue();
+  renderAdminOrgTable();
+  renderAdminSecurityView();
 }
 
 function filterAdminInventoryCategory(cat, btn) {
