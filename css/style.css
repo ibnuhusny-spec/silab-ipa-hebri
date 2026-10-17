@@ -1554,7 +1554,7 @@ img, picture, svg, video, canvas {
 }
 
 /* Modals */
-.modal-backdrop {
+.modal-backdrop, .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
@@ -1567,7 +1567,7 @@ img, picture, svg, video, canvas {
   animation: fadeIn 0.2s ease;
 }
 
-.modal-backdrop.active {
+.modal-backdrop.active, .modal-overlay.active {
   display: flex;
 }
 
