@@ -2834,7 +2834,20 @@ function printDamageClaimReceipt() {
     `).join('');
   }
 
+  const elBapLaboran = document.getElementById('printBapLaboranName');
+  const elBapNip = document.getElementById('printBapLaboranNip');
+  if (elBapLaboran && STATE.laboran) elBapLaboran.textContent = STATE.laboran.nama;
+  if (elBapNip && STATE.laboran) elBapNip.textContent = STATE.laboran.nip;
+
+  // Set printing classes for single-page A4
+  document.body.classList.remove('printing-loan');
+  document.body.classList.add('printing-damage');
+
   window.print();
+
+  setTimeout(() => {
+    document.body.classList.remove('printing-damage');
+  }, 1000);
 }
 
 function resolveDamageClaim(ticket) {
@@ -3576,16 +3589,27 @@ function printLoanReceipt(ticket) {
   const loan = STATE.loans.find(l => l.tiket === ticket);
   if (!loan) return;
 
-  document.getElementById('printTicketNumber').textContent = loan.tiket;
-  document.getElementById('printBorrowerName').textContent = loan.nama;
-  document.getElementById('printBorrowerRole').textContent = loan.peran;
-  document.getElementById('printBorrowerNim').textContent = loan.nim;
-  document.getElementById('printBorrowerCourse').textContent = loan.mataKuliah;
-  document.getElementById('printBorrowerLecturer').textContent = loan.dosenPengampu;
-  document.getElementById('printLoanDate').textContent = loan.tglPinjam;
-  document.getElementById('printReturnDueDate').textContent = loan.tglRencanaKembali;
-  document.getElementById('printCurrentDate').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  document.getElementById('printSignerName').textContent = `( ${loan.nama} )`;
+  const elTicket = document.getElementById('printTicketNumber');
+  const elName = document.getElementById('printBorrowerName');
+  const elRole = document.getElementById('printBorrowerRole');
+  const elNim = document.getElementById('printBorrowerNim');
+  const elCourse = document.getElementById('printBorrowerCourse');
+  const elLecturer = document.getElementById('printBorrowerLecturer');
+  const elLoanDate = document.getElementById('printLoanDate');
+  const elReturnDate = document.getElementById('printReturnDueDate');
+  const elCurrentDate = document.getElementById('printCurrentDate');
+  const elSignerName = document.getElementById('printSignerName');
+
+  if (elTicket) elTicket.textContent = loan.tiket;
+  if (elName) elName.textContent = loan.nama;
+  if (elRole) elRole.textContent = loan.peran;
+  if (elNim) elNim.textContent = loan.nim;
+  if (elCourse) elCourse.textContent = loan.mataKuliah;
+  if (elLecturer) elLecturer.textContent = loan.dosenPengampu;
+  if (elLoanDate) elLoanDate.textContent = loan.tglPinjam;
+  if (elReturnDate) elReturnDate.textContent = loan.tglRencanaKembali;
+  if (elCurrentDate) elCurrentDate.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (elSignerName) elSignerName.textContent = `( ${loan.nama} )`;
 
   const printNama = document.getElementById('printLaboranName');
   const printNip = document.getElementById('printLaboranNip');
@@ -3593,34 +3617,52 @@ function printLoanReceipt(ticket) {
   if (printNip && STATE.laboran) printNip.textContent = STATE.laboran.nip;
 
   const sigArea = document.getElementById('printBorrowerSigArea');
-  if (loan.signaturePeminjam) {
-    sigArea.innerHTML = `<img src="${loan.signaturePeminjam}" style="max-height: 55px; max-width: 150px;">`;
-  } else {
-    sigArea.innerHTML = `<div style="height: 50px;"></div>`;
+  if (sigArea) {
+    if (loan.signaturePeminjam) {
+      sigArea.innerHTML = `<img src="${loan.signaturePeminjam}" alt="Tanda Tangan Peminjam" style="max-height: 45px; max-width: 140px; object-fit: contain;">`;
+    } else {
+      sigArea.innerHTML = `<div style="height: 45px;"></div>`;
+    }
   }
 
   const tbody = document.getElementById('printItemsTableBody');
-  tbody.innerHTML = loan.items.map((item, idx) => `
-    <tr>
-      <td style="text-align: center;">${idx + 1}</td>
-      <td style="font-family: monospace;">${item.kode || '-'}</td>
-      <td><strong>${item.nama}</strong></td>
-      <td>${item.merk || '-'} (${item.buatan || '-'})</td>
-      <td style="text-align: center; font-weight: bold;">${item.jumlah} Unit</td>
-    </tr>
-  `).join('');
+  if (tbody) {
+    tbody.innerHTML = loan.items.map((item, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="font-family: monospace; font-size: 8pt;">${item.kode || '-'}</td>
+        <td><strong>${item.nama}</strong></td>
+        <td>${item.merk || '-'} (${item.buatan || '-'})</td>
+        <td style="text-align: center; font-weight: bold;">${item.jumlah} Unit</td>
+      </tr>
+    `).join('');
+  }
+
+  const totalQty = loan.items.reduce((sum, item) => sum + (parseInt(item.jumlah) || 1), 0);
+  const elTotalUnits = document.getElementById('printTotalUnits');
+  if (elTotalUnits) elTotalUnits.textContent = `${totalQty} Unit`;
 
   const qrPrintBox = document.getElementById('printQrVerifyBox');
-  qrPrintBox.innerHTML = '';
-  try {
-    new QRCode(qrPrintBox, {
-      text: `VERIFIED-IAI-YAPNAS:${loan.tiket}`,
-      width: 60,
-      height: 60
-    });
-  } catch (e) {}
+  if (qrPrintBox) {
+    qrPrintBox.innerHTML = '';
+    try {
+      new QRCode(qrPrintBox, {
+        text: `VERIFIED-IAI-YAPNAS:${loan.tiket}`,
+        width: 48,
+        height: 48
+      });
+    } catch (e) {}
+  }
+
+  // Set printing classes for single-page A4
+  document.body.classList.remove('printing-damage');
+  document.body.classList.add('printing-loan');
 
   window.print();
+
+  setTimeout(() => {
+    document.body.classList.remove('printing-loan');
+  }, 1000);
 }
 
 /* ==========================================================================

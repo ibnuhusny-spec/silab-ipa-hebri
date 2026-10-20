@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261020_04">
+  <link rel="stylesheet" href="css/style.css?v=20261020_05">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -2219,160 +2219,222 @@
 
   <!-- ======================================================================
        PRINT-ONLY SHEET: FORMAT RESMI SURAT PEMINJAMAN IAI YAPNAS JENEPONTO
+       (DIOPTIMALKAN PAS 1 HALAMAN A4 PORTRAIT)
        ====================================================================== -->
   <div class="print-only-sheet" id="printSheetArea">
+    <!-- Kop Surat Resmi -->
     <div class="print-kop-surat">
-      <img src="yapnas.png" class="print-kop-logo" alt="Logo IAI YAPNAS">
+      <img src="yapnas.png" class="print-kop-logo" alt="Logo Resmi IAI YAPNAS Jeneponto">
       <div class="print-kop-text">
-        <h2>INSTITUT AGAMA ISLAM YAPNAS JENEPONTO</h2>
-        <h3>FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
-        <p><strong>Laboratorium Terpadu (Fisika - Kimia - Biologi)</strong></p>
-        <p>Jl. Lanto Daeng Pasewang No. KM. 76, Cinong, Tonrokassi, Tamalatea, Jeneponto, Sulawesi Selatan 92351</p>
+        <h2 class="print-inst-name">INSTITUT AGAMA ISLAM (IAI) YAPNAS JENEPONTO</h2>
+        <h3 class="print-fac-name">FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
+        <div class="print-lab-name">LABORATORIUM TERPADU (FISIKA • KIMIA • BIOLOGI)</div>
+        <p class="print-contact-text">Kampus: Jl. Lanto Daeng Pasewang No. KM. 76, Tonrokassi, Tamalatea, Jeneponto 92351</p>
+        <p class="print-contact-sub">Laman: silab-ipa-hebri.vercel.app • Pos-el: lab.ipa@iaiyapnas.ac.id</p>
+      </div>
+    </div>
+    <div class="print-kop-divider"></div>
+
+    <!-- Judul & Nomor E-Tiket -->
+    <div class="print-header-block">
+      <div class="print-title">SURAT BUKTI PEMINJAMAN ALAT & FASILITAS LABORATORIUM</div>
+      <div class="print-meta-badge-row">
+        <span class="print-ticket-badge">Nomor Registrasi E-Tiket: <strong id="printTicketNumber">PNJ-XXXXX</strong></span>
+        <span class="print-system-tag">Dokumen Resmi SILAB-IPA</span>
       </div>
     </div>
 
-    <div class="print-title">SURAT BUKTI PEMINJAMAN ALAT & FASILITAS LABORATORIUM</div>
-    <div class="print-nomor-surat">Nomor E-Tiket: <span id="printTicketNumber">PNJ-XXXXX</span></div>
-
-    <table style="width: 100%; font-size: 10pt; margin-bottom: 12px; border-collapse: collapse;">
+    <!-- Data Identitas Peminjam & Jadwal Praktikum -->
+    <table class="print-info-table">
       <tr>
-        <td style="width: 25%; padding: 4px;"><strong>Nama Peminjam</strong></td>
-        <td style="width: 25%; padding: 4px;">: <span id="printBorrowerName">-</span></td>
-        <td style="width: 25%; padding: 4px;"><strong>Peran / Status</strong></td>
-        <td style="width: 25%; padding: 4px;">: <span id="printBorrowerRole">-</span></td>
+        <td class="print-lbl" style="width: 20%;">Nama Peminjam</td>
+        <td class="print-val" style="width: 32%;">: <strong id="printBorrowerName">-</strong></td>
+        <td class="print-lbl" style="width: 20%;">Peran / Status</td>
+        <td class="print-val" style="width: 28%;">: <span id="printBorrowerRole" class="print-role-tag">-</span></td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>NIM / NIDN</strong></td>
-        <td style="padding: 4px;">: <span id="printBorrowerNim">-</span></td>
-        <td style="padding: 4px;"><strong>Program Studi</strong></td>
-        <td style="padding: 4px;">: Tadris IPA - Tarbiyyah</td>
+        <td class="print-lbl">NIM / NIDN</td>
+        <td class="print-val">: <span id="printBorrowerNim" style="font-family: monospace; font-weight: 600;">-</span></td>
+        <td class="print-lbl">Program Studi</td>
+        <td class="print-val">: Tadris IPA - Fak. Tarbiyyah</td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>Mata Kuliah</strong></td>
-        <td style="padding: 4px;">: <span id="printBorrowerCourse">-</span></td>
-        <td style="padding: 4px;"><strong>Dosen Pembina</strong></td>
-        <td style="padding: 4px;">: <span id="printBorrowerLecturer">-</span></td>
+        <td class="print-lbl">Mata Kuliah</td>
+        <td class="print-val">: <span id="printBorrowerCourse">-</span></td>
+        <td class="print-lbl">Dosen Pembina</td>
+        <td class="print-val">: <span id="printBorrowerLecturer">-</span></td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>Tgl Pinjam</strong></td>
-        <td style="padding: 4px;">: <span id="printLoanDate">-</span></td>
-        <td style="padding: 4px;"><strong>Batas Kembali</strong></td>
-        <td style="padding: 4px;">: <span id="printReturnDueDate">-</span></td>
+        <td class="print-lbl">Tanggal Pinjam</td>
+        <td class="print-val">: <span id="printLoanDate" style="font-weight: 600;">-</span></td>
+        <td class="print-lbl">Batas Kembali</td>
+        <td class="print-val">: <strong id="printReturnDueDate" style="color: #064e3b;">-</strong></td>
       </tr>
     </table>
 
+    <!-- Tabel Daftar Barang Inventaris -->
+    <div class="print-section-title">DAFTAR BARANG / ALAT LABORATORIUM YANG DIPINJAM:</div>
     <table class="print-table">
       <thead>
         <tr>
-          <th style="width: 8%;">No</th>
-          <th style="width: 20%;">Kode Barang</th>
-          <th style="width: 42%;">Nama Barang / Alat</th>
-          <th style="width: 15%;">Merk & Buatan</th>
-          <th style="width: 15%;">Jumlah</th>
+          <th style="width: 6%; text-align: center;">No</th>
+          <th style="width: 20%;">Kode Inventaris</th>
+          <th style="width: 44%;">Nama Peralatan / Fasilitas</th>
+          <th style="width: 18%;">Merk / Spesifikasi</th>
+          <th style="width: 12%; text-align: center;">Jumlah</th>
         </tr>
       </thead>
       <tbody id="printItemsTableBody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align: right; font-weight: 700; padding: 4px 8px; background: #f8fafc;">
+            Total Peralatan yang Dipinjam:
+          </td>
+          <td id="printTotalUnits" style="text-align: center; font-weight: 800; padding: 4px 8px; background: #f8fafc;">
+            - Unit
+          </td>
+        </tr>
+      </tfoot>
     </table>
 
+    <!-- Ketentuan Ringkas & Tanggung Jawab -->
+    <div class="print-notice-box">
+      <strong>Ketentuan & Kewajiban Peminjam:</strong>
+      <ol>
+        <li>Peminjam bertanggung jawab penuh atas keutuhan, kebersihan, fungsi, dan keselamatan seluruh peralatan di atas.</li>
+        <li>Apabila terjadi kerusakan atau kehilangan, peminjam wajib mengganti alat dengan tipe/spesifikasi yang sama sesuai Berita Acara Laboratorium.</li>
+        <li>Wajib mengembalikan peralatan tepat waktu sebelum atau pada tanggal batas pengembalian.</li>
+      </ol>
+    </div>
+
+    <!-- Tanda Tangan Resmi (2 Kolom) -->
     <div class="print-signature-grid">
-      <div>
-        <p>Jeneponto, <span id="printCurrentDate"></span></p>
-        <p><strong>Peminjam (Mahasiswa/Dosen),</strong></p>
+      <div class="print-sig-col">
+        <p class="print-sig-date">Jeneponto, <span id="printCurrentDate"></span></p>
+        <p class="print-sig-title">Peminjam (Mahasiswa / Dosen),</p>
         <div class="print-sig-space" id="printBorrowerSigArea"></div>
-        <p><strong id="printSignerName">( ........................................ )</strong></p>
+        <p class="print-sig-name"><strong id="printSignerName">( ........................................ )</strong></p>
+        <p class="print-sig-id">Tanda Tangan Elektronik Terdaftar</p>
       </div>
 
-      <div>
-        <p>Mengetahui & Menyetujui,</p>
-        <p><strong>Laboran Lab Terpadu IPA,</strong></p>
-        <div class="print-sig-space" style="display: flex; align-items: center; justify-content: center;">
-          <div id="printQrVerifyBox" style="width: 65px; height: 65px;"></div>
+      <div class="print-sig-col">
+        <p class="print-sig-date">Disetujui & Diverifikasi Oleh:</p>
+        <p class="print-sig-title">Laboran Lab Terpadu Tadris IPA,</p>
+        <div class="print-sig-space print-laboran-sig-wrap">
+          <div id="printQrVerifyBox" class="print-qr-box"></div>
+          <div class="print-qr-caption">
+            <span>TERVERIFIKASI SISTEM</span>
+            <small>SILAB-IPA CLOUD</small>
+          </div>
         </div>
-        <p><strong id="printLaboranName">Hebrianti, S.Pd., M.Si.</strong></p>
-        <p style="font-size: 8.5pt;">NIP. <span id="printLaboranNip">-</span></p>
+        <p class="print-sig-name"><strong id="printLaboranName">Hebrianti, S.Pd., M.Si.</strong></p>
+        <p class="print-sig-id">NIP/NIDN. <span id="printLaboranNip">-</span></p>
       </div>
+    </div>
+
+    <!-- Footer Catatan Otentikasi -->
+    <div class="print-footer-audit">
+      Surat bukti peminjaman ini sah dan diterbitkan secara digital melalui Sistem Informasi Laboratorium (SILAB-IPA) Fakultas Tarbiyyah IAI YAPNAS Jeneponto. Verifikasi keaslian dapat dipindai melalui QR Code di atas.
     </div>
   </div>
 
   <!-- ======================================================================
        PRINT-ONLY SHEET: FORMAT RESMI BERITA ACARA KERUSAKAN & GANTI RUGI
+       (DIOPTIMALKAN PAS 1 HALAMAN A4 PORTRAIT)
        ====================================================================== -->
   <div class="print-only-sheet" id="printDamageSheetArea">
+    <!-- Kop Surat Resmi -->
     <div class="print-kop-surat">
-      <img src="yapnas.png" class="print-kop-logo" alt="Logo IAI YAPNAS">
+      <img src="yapnas.png" class="print-kop-logo" alt="Logo Resmi IAI YAPNAS Jeneponto">
       <div class="print-kop-text">
-        <h2>INSTITUT AGAMA ISLAM YAPNAS JENEPONTO</h2>
-        <h3>FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
-        <p><strong>Laboratorium Terpadu (Fisika - Kimia - Biologi)</strong></p>
-        <p>Jl. Lanto Daeng Pasewang No. KM. 76, Cinong, Tonrokassi, Tamalatea, Jeneponto, Sulawesi Selatan 92351</p>
+        <h2 class="print-inst-name">INSTITUT AGAMA ISLAM (IAI) YAPNAS JENEPONTO</h2>
+        <h3 class="print-fac-name">FAKULTAS TARBIYYAH • PROGRAM STUDI TADRIS IPA</h3>
+        <div class="print-lab-name">LABORATORIUM TERPADU (FISIKA • KIMIA • BIOLOGI)</div>
+        <p class="print-contact-text">Kampus: Jl. Lanto Daeng Pasewang No. KM. 76, Tonrokassi, Tamalatea, Jeneponto 92351</p>
+        <p class="print-contact-sub">Laman: silab-ipa-hebri.vercel.app • Pos-el: lab.ipa@iaiyapnas.ac.id</p>
+      </div>
+    </div>
+    <div class="print-kop-divider"></div>
+
+    <div class="print-header-block">
+      <div class="print-title" style="color: #991b1b;">BERITA ACARA KERUSAKAN ASET & SURAT PERNYATAAN GANTI RUGI</div>
+      <div class="print-meta-badge-row">
+        <span class="print-ticket-badge">Nomor Berita Acara: <strong id="printBapNumber">BAP-LAB/2026/XXXX</strong></span>
+        <span class="print-system-tag" style="border-color: #ef4444; color: #dc2626;">Klaim Kerusakan Inventaris</span>
       </div>
     </div>
 
-    <div class="print-title" style="color: #b91c1c;">BERITA ACARA KERUSAKAN ASET & SURAT PERNYATAAN GANTI RUGI</div>
-    <div class="print-nomor-surat">Nomor Berita Acara: <span id="printBapNumber">BAP-LAB/2026/XXXX</span></div>
-
-    <p style="font-size: 9.5pt; text-align: justify; margin-bottom: 12px;">
+    <p style="font-size: 8pt; text-align: justify; margin: 4px 0 8px; line-height: 1.35;">
       Pada hari ini, yang bertanda tangan di bawah ini menerangkan bahwa telah dilakukan pemeriksaan pengembalian alat laboratorium dengan rincian data sebagai berikut:
     </p>
 
-    <table style="width: 100%; font-size: 9.5pt; margin-bottom: 12px; border-collapse: collapse;">
+    <table class="print-info-table">
       <tr>
-        <td style="width: 25%; padding: 4px;"><strong>Nama Peminjam</strong></td>
-        <td style="width: 25%; padding: 4px;">: <span id="printBapBorrowerName">-</span></td>
-        <td style="width: 25%; padding: 4px;"><strong>Peran / Status</strong></td>
-        <td style="width: 25%; padding: 4px;">: <span id="printBapBorrowerRole">-</span></td>
+        <td class="print-lbl" style="width: 20%;">Nama Peminjam</td>
+        <td class="print-val" style="width: 32%;">: <strong id="printBapBorrowerName">-</strong></td>
+        <td class="print-lbl" style="width: 20%;">Peran / Status</td>
+        <td class="print-val" style="width: 28%;">: <span id="printBapBorrowerRole" class="print-role-tag">-</span></td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>NIM / NIDN</strong></td>
-        <td style="padding: 4px;">: <span id="printBapBorrowerNim">-</span></td>
-        <td style="padding: 4px;"><strong>No. WhatsApp</strong></td>
-        <td style="padding: 4px;">: <span id="printBapBorrowerPhone">-</span></td>
+        <td class="print-lbl">NIM / NIDN</td>
+        <td class="print-val">: <span id="printBapBorrowerNim" style="font-family: monospace; font-weight: 600;">-</span></td>
+        <td class="print-lbl">No. WhatsApp</td>
+        <td class="print-val">: <span id="printBapBorrowerPhone">-</span></td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>Nomor Tiket Pinjam</strong></td>
-        <td style="padding: 4px;">: <span id="printBapTicketNum">-</span></td>
-        <td style="padding: 4px;"><strong>Mata Kuliah / Dosen</strong></td>
-        <td style="padding: 4px;">: <span id="printBapCourse">-</span></td>
+        <td class="print-lbl">No. Tiket Pinjam</td>
+        <td class="print-val">: <span id="printBapTicketNum" style="font-family: monospace; font-weight: 700;">-</span></td>
+        <td class="print-lbl">Mata Kuliah / Dosen</td>
+        <td class="print-val">: <span id="printBapCourse">-</span></td>
       </tr>
       <tr>
-        <td style="padding: 4px;"><strong>Kondisi Ditemukan</strong></td>
-        <td style="padding: 4px; color: #b91c1c; font-weight: bold;">: <span id="printBapCondition">-</span></td>
-        <td style="padding: 4px;"><strong>Tenggat Penggantian</strong></td>
-        <td style="padding: 4px; font-weight: bold;">: 7 (Tujuh) Hari Kerja</td>
+        <td class="print-lbl">Kondisi Ditemukan</td>
+        <td class="print-val" style="color: #b91c1c; font-weight: bold;">: <span id="printBapCondition">-</span></td>
+        <td class="print-lbl">Tenggat Penggantian</td>
+        <td class="print-val" style="font-weight: bold; color: #b91c1c;">: 7 (Tujuh) Hari Kerja</td>
       </tr>
     </table>
 
+    <div class="print-section-title">RINCIAN ALAT YANG MENGALAMI KERUSAKAN / PECAH:</div>
     <table class="print-table">
       <thead>
         <tr>
-          <th style="width: 8%;">No</th>
+          <th style="width: 6%; text-align: center;">No</th>
           <th style="width: 22%;">Kode Alat</th>
-          <th style="width: 45%;">Nama Alat / Fasilitas yang Rusak</th>
-          <th style="width: 25%;">Spesifikasi / Merk</th>
+          <th style="width: 44%;">Nama Peralatan / Fasilitas</th>
+          <th style="width: 28%;">Merk / Spesifikasi Pengganti</th>
         </tr>
       </thead>
       <tbody id="printBapItemsBody"></tbody>
     </table>
 
-    <p style="font-size: 9.5pt; text-align: justify; margin-top: 14px;">
-      Peminjam menyatakan bersedia dan berjanji mengganti unit barang laboratorium yang mengalami kerusakan/pecah dengan spesifikasi dan kualitas yang sama dalam kurun waktu 7 hari kerja sejak surat ini diterbitkan.
-    </p>
+    <div class="print-notice-box" style="border-color: #fca5a5; background: #fff5f5;">
+      <strong style="color: #991b1b;">Pernyataan Kesanggupan Peminjam:</strong>
+      <p style="margin: 0; font-size: 7.2pt; line-height: 1.35; color: #450a0a;">
+        Peminjam menyatakan bersedia dan berjanji mengganti unit barang laboratorium yang mengalami kerusakan/pecah dengan spesifikasi, merk, dan kualitas yang sama dalam kurun waktu selambat-lambatnya 7 (tujuh) hari kerja sejak surat ini diterbitkan.
+      </p>
+    </div>
 
     <div class="print-signature-grid">
-      <div>
-        <p>Yang Membuat Pernyataan,</p>
-        <p><strong>Peminjam Yang Bertanggung Jawab,</strong></p>
-        <div class="print-sig-space" style="height: 60px;"></div>
-        <p><strong id="printBapSignerName">( ........................................ )</strong></p>
+      <div class="print-sig-col">
+        <p class="print-sig-date">Yang Membuat Pernyataan,</p>
+        <p class="print-sig-title">Peminjam Yang Bertanggung Jawab,</p>
+        <div class="print-sig-space" style="height: 48px;"></div>
+        <p class="print-sig-name"><strong id="printBapSignerName">( ........................................ )</strong></p>
+        <p class="print-sig-id">Tanda Tangan Peminjam</p>
       </div>
 
-      <div>
-        <p>Jeneponto, <span id="printBapDate"></span></p>
-        <p><strong>Laboran Lab Terpadu IPA,</strong></p>
-        <div class="print-sig-space" style="height: 60px;"></div>
-        <p><strong>Hebrianti, S.Pd., M.Si.</strong></p>
-        <p style="font-size: 8.5pt;">NIP. -</p>
+      <div class="print-sig-col">
+        <p class="print-sig-date">Jeneponto, <span id="printBapDate"></span></p>
+        <p class="print-sig-title">Laboran Lab Terpadu Tadris IPA,</p>
+        <div class="print-sig-space" style="height: 48px;"></div>
+        <p class="print-sig-name"><strong id="printBapLaboranName">Hebrianti, S.Pd., M.Si.</strong></p>
+        <p class="print-sig-id">NIP/NIDN. <span id="printBapLaboranNip">-</span></p>
       </div>
+    </div>
+
+    <div class="print-footer-audit">
+      Berita Acara ini diterbitkan secara resmi oleh Laboratorium Terpadu Tadris IPA IAI YAPNAS Jeneponto sebagai dokumen sah penyelesaian klaim inventaris.
     </div>
   </div>
 
@@ -2618,8 +2680,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261020_04"></script>
-  <script src="js/data.js?v=20261020_04"></script>
-  <script src="js/app.js?v=20261020_04"></script>
+  <script src="js/supabase.js?v=20261020_05"></script>
+  <script src="js/data.js?v=20261020_05"></script>
+  <script src="js/app.js?v=20261020_05"></script>
 </body>
 </html>

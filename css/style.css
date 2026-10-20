@@ -2046,88 +2046,383 @@ img, picture, svg, video, canvas {
 }
 
 /* ==========================================================================
-   10. PRINT MEDIA STYLES
+   10. PRINT MEDIA STYLES (A4 SINGLE-PAGE FORMAL STANDARD)
    ========================================================================== */
+
+/* Di Layar Biasa: Sembunyikan Dokumen Cetak */
+.print-only-sheet {
+  display: none !important;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 10mm 14mm 10mm 14mm;
+}
+
 @media print {
+  /* Reset Background & Teks ke Hitam Putih Standar Kertas */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif !important;
+    font-size: 8.5pt !important;
+    line-height: 1.32 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  /* Sembunyikan Seluruh UI Aplikasi Web, Navigasi, Header, Modal, dan Toast */
   .splash-overlay,
   .app-sidebar,
+  .app-main-layout,
   .top-header-bar,
   .mobile-bottom-nav,
   .btn,
-  .toast-container {
+  .modal-backdrop,
+  .modal-overlay,
+  .toast-container,
+  #adminLoginModal,
+  #loanSuccessModal,
+  #damageClaimModal,
+  #detailItemModal,
+  #returnItemModal,
+  #orgStructureModal,
+  #changeAdminCredentialsModal,
+  #supabaseSqlModal {
     display: none !important;
-  }
-
-  .app-main-layout {
-    margin-left: 0 !important;
-  }
-
-  .print-only-sheet {
-    display: block !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
     padding: 0 !important;
   }
 
+  /* Kontrol Lembar Cetak: Hanya tampilkan lembar yang aktif */
+  .print-only-sheet {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Secara default / jika mencetak bukti pinjam, tampilkan HANYA #printSheetArea */
+  body:not(.printing-damage) #printSheetArea,
+  body.printing-loan #printSheetArea {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Jika mencetak berita acara ganti rugi, tampilkan HANYA #printDamageSheetArea */
+  body.printing-damage #printDamageSheetArea {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.printing-damage #printSheetArea {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Kop Surat Resmi Format Indonesia */
   .print-kop-surat {
-    border-bottom: 3px double #000;
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 0 !important;
   }
 
   .print-kop-logo {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
+    width: 66px !important;
+    height: 66px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
   }
 
   .print-kop-text {
-    text-align: center;
-    flex: 1;
+    flex: 1 !important;
+    text-align: center !important;
   }
 
-  .print-kop-text h2 {
-    font-size: 14pt;
-    font-weight: bold;
-    margin: 0;
+  .print-inst-name, .print-kop-text h2 {
+    font-size: 12.5pt !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.3px !important;
+    margin: 0 !important;
+    color: #000000 !important;
+    line-height: 1.2 !important;
   }
 
-  .print-kop-text h3 {
-    font-size: 13pt;
-    font-weight: bold;
-    margin: 2px 0;
+  .print-fac-name, .print-kop-text h3 {
+    font-size: 10.5pt !important;
+    font-weight: 700 !important;
+    margin: 2px 0 1px !important;
+    color: #000000 !important;
+    line-height: 1.2 !important;
   }
 
-  .print-kop-text p {
-    font-size: 9pt;
-    margin: 0;
+  .print-lab-name {
+    font-size: 9pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    letter-spacing: 0.2px !important;
+    margin-bottom: 2px !important;
   }
 
+  .print-contact-text, .print-kop-text p {
+    font-size: 7.2pt !important;
+    color: #333333 !important;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+  }
+
+  .print-contact-sub {
+    font-size: 7pt !important;
+    color: #444444 !important;
+    margin: 1px 0 0 !important;
+  }
+
+  /* Garis Ganda Kop Surat (Tebal & Tipis) */
+  .print-kop-divider {
+    border-top: 2.5px solid #000000 !important;
+    border-bottom: 0.75px solid #000000 !important;
+    height: 3px !important;
+    margin: 4px 0 10px !important;
+  }
+
+  /* Judul & Nomor Surat */
+  .print-header-block {
+    text-align: center !important;
+    margin-bottom: 10px !important;
+  }
+
+  .print-title {
+    font-size: 11pt !important;
+    font-weight: 800 !important;
+    text-decoration: underline !important;
+    margin: 0 0 3px !important;
+    color: #000000 !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  .print-meta-badge-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
+    font-size: 8.5pt !important;
+  }
+
+  .print-ticket-badge {
+    font-family: 'JetBrains Mono', Consolas, monospace !important;
+    color: #000000 !important;
+  }
+
+  .print-system-tag {
+    font-size: 7.5pt !important;
+    border: 1px solid #777777 !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    color: #444444 !important;
+  }
+
+  /* Tabel Identitas & Jadwal */
+  .print-info-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 8px !important;
+    font-size: 8.2pt !important;
+    border: 1px solid #cccccc !important;
+  }
+
+  .print-info-table td {
+    padding: 3px 6px !important;
+    vertical-align: middle !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+  }
+
+  .print-info-table td.print-lbl {
+    background: #f8fafc !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+  }
+
+  .print-role-tag {
+    font-weight: 700 !important;
+  }
+
+  .print-section-title {
+    font-size: 8.2pt !important;
+    font-weight: 800 !important;
+    color: #000000 !important;
+    margin: 8px 0 4px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  /* Tabel Daftar Inventaris */
   .print-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 6px 0 !important;
+    font-size: 8.2pt !important;
   }
 
-  .print-table th, .print-table td {
-    border: 1px solid #000 !important;
-    padding: 6px 10px;
-    font-size: 10pt;
-    color: #000 !important;
+  .print-table th {
+    background: #f1f5f9 !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    padding: 4px 6px !important;
+    font-weight: 800 !important;
+    font-size: 8pt !important;
+    text-align: left !important;
   }
 
+  .print-table td {
+    border: 1px solid #000000 !important;
+    padding: 3.5px 6px !important;
+    color: #000000 !important;
+    vertical-align: middle !important;
+  }
+
+  /* Kotak Ketentuan Singkat */
+  .print-notice-box {
+    border: 1px solid #94a3b8 !important;
+    background: #f8fafc !important;
+    padding: 5px 8px !important;
+    border-radius: 4px !important;
+    margin: 8px 0 !important;
+    font-size: 7.2pt !important;
+    line-height: 1.35 !important;
+    color: #1e293b !important;
+  }
+
+  .print-notice-box strong {
+    display: block !important;
+    margin-bottom: 2px !important;
+    font-size: 7.5pt !important;
+  }
+
+  .print-notice-box ol {
+    margin: 0 !important;
+    padding-left: 14px !important;
+  }
+
+  .print-notice-box li {
+    margin-bottom: 1px !important;
+  }
+
+  /* Grid Tanda Tangan */
   .print-signature-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-top: 40px;
-    text-align: center;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    margin-top: 10px !important;
+    text-align: center !important;
+    page-break-inside: avoid !important;
   }
-}
 
-.print-only-sheet {
-  display: none;
+  .print-sig-col {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .print-sig-date {
+    font-size: 8.2pt !important;
+    margin: 0 0 2px !important;
+    color: #000000 !important;
+  }
+
+  .print-sig-title {
+    font-size: 8.2pt !important;
+    font-weight: 700 !important;
+    margin: 0 0 4px !important;
+    color: #000000 !important;
+  }
+
+  .print-sig-space {
+    height: 48px !important;
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 4px !important;
+  }
+
+  .print-sig-space img {
+    max-height: 45px !important;
+    max-width: 140px !important;
+    object-fit: contain !important;
+  }
+
+  .print-laboran-sig-wrap {
+    gap: 8px !important;
+  }
+
+  .print-qr-box {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .print-qr-caption {
+    display: flex !important;
+    flex-direction: column !important;
+    text-align: left !important;
+    font-size: 6.8pt !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-qr-caption span {
+    font-weight: 800 !important;
+    color: #064e3b !important;
+  }
+
+  .print-qr-caption small {
+    color: #475569 !important;
+  }
+
+  .print-sig-name {
+    font-size: 8.5pt !important;
+    margin: 0 0 1px !important;
+    color: #000000 !important;
+  }
+
+  .print-sig-id {
+    font-size: 7.2pt !important;
+    color: #475569 !important;
+    margin: 0 !important;
+  }
+
+  /* Footer Audit Trail */
+  .print-footer-audit {
+    font-size: 6.5pt !important;
+    color: #64748b !important;
+    text-align: center !important;
+    border-top: 0.75px dashed #cbd5e1 !important;
+    padding-top: 4px !important;
+    margin-top: 8px !important;
+  }
 }
 
 /* ==========================================================================
