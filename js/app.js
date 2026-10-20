@@ -2843,11 +2843,13 @@ function printDamageClaimReceipt() {
   document.body.classList.remove('printing-loan');
   document.body.classList.add('printing-damage');
 
-  window.print();
+  setTimeout(() => {
+    window.print();
+  }, 100);
 
   setTimeout(() => {
     document.body.classList.remove('printing-damage');
-  }, 1000);
+  }, 1200);
 }
 
 function resolveDamageClaim(ticket) {
@@ -3326,7 +3328,9 @@ function showLoanSuccessModal(loan) {
 function printReceiptFromSuccess() {
   closeModal('loanSuccessModal');
   if (STATE.lastCreatedLoan) {
-    printLoanReceipt(STATE.lastCreatedLoan.tiket);
+    setTimeout(() => {
+      printLoanReceipt(STATE.lastCreatedLoan.tiket);
+    }, 80);
   }
 }
 
@@ -3658,11 +3662,13 @@ function printLoanReceipt(ticket) {
   document.body.classList.remove('printing-damage');
   document.body.classList.add('printing-loan');
 
-  window.print();
+  setTimeout(() => {
+    window.print();
+  }, 100);
 
   setTimeout(() => {
     document.body.classList.remove('printing-loan');
-  }, 1000);
+  }, 1200);
 }
 
 /* ==========================================================================
