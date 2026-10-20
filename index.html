@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261020_03">
+  <link rel="stylesheet" href="css/style.css?v=20261020_04">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -623,161 +623,283 @@
              TAB 5: FORMULIR PEMINJAMAN & KERANJANG
              ================================================================== -->
         <section class="content-section" id="tab-peminjaman">
+          <!-- Section Header -->
           <div class="section-header">
             <div class="section-title-wrap">
               <h2><i class="fa-solid fa-clipboard-list" style="color: #10b981;"></i> Formulir Peminjaman Inventaris</h2>
-              <p>Ajukan permohonan peminjaman alat laboratorium dengan tiket QR Code & Tanda Tangan Digital</p>
+              <p>Pengajuan peminjaman alat & bahan praktikum terpadu dengan tiket QR Code & Tanda Tangan Digital resmi.</p>
             </div>
           </div>
 
+          <!-- Alur Peminjaman (Interactive Visual Stepper) -->
+          <div class="loan-stepper-wrap">
+            <div class="loan-step-item is-clickable" onclick="switchTab('tab-alat')" title="Klik untuk membuka Katalog Alat">
+              <div class="step-num"><i class="fa-solid fa-microscope"></i></div>
+              <div class="step-content">
+                <span class="step-tag">Langkah 1</span>
+                <h4 class="step-title">Pilih di Katalog</h4>
+                <p class="step-desc">Pilih alat praktikum</p>
+              </div>
+            </div>
+            <div class="loan-step-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            <div class="loan-step-item active">
+              <div class="step-num"><i class="fa-solid fa-id-card-clip"></i></div>
+              <div class="step-content">
+                <span class="step-tag">Langkah 2</span>
+                <h4 class="step-title">Data Peminjam</h4>
+                <p class="step-desc">Isi / auto-fill civitas</p>
+              </div>
+            </div>
+            <div class="loan-step-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            <div class="loan-step-item">
+              <div class="step-num"><i class="fa-solid fa-calendar-days"></i></div>
+              <div class="step-content">
+                <span class="step-tag">Langkah 3</span>
+                <h4 class="step-title">Jadwal Praktikum</h4>
+                <p class="step-desc">Mata kuliah & dosen</p>
+              </div>
+            </div>
+            <div class="loan-step-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            <div class="loan-step-item">
+              <div class="step-num"><i class="fa-solid fa-qrcode"></i></div>
+              <div class="step-content">
+                <span class="step-tag">Langkah 4</span>
+                <h4 class="step-title">Tanda Tangan & QR</h4>
+                <p class="step-desc">Terbitkan E-Tiket</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid Layout: Sidebar Keranjang (Kiri) + Formulir Pengajuan (Kanan) -->
           <div class="loan-layout-grid">
-            <!-- Keranjang Peminjaman -->
-            <div class="cart-summary-panel">
-              <div class="cart-header">
-                <h3><i class="fa-solid fa-basket-shopping" style="color: #10b981;"></i> Barang yang Dipilih</h3>
-                <span class="badge" id="cartBadgeText">0 item</span>
+            
+            <!-- Kolom Kiri: Keranjang Peminjaman (Sticky Sidebar) -->
+            <aside class="cart-summary-panel">
+              <div class="cart-panel-header">
+                <div class="cart-panel-title">
+                  <div class="cart-panel-icon"><i class="fa-solid fa-basket-shopping"></i></div>
+                  <div>
+                    <h3>Barang Dipilih</h3>
+                    <span class="cart-panel-sub">Koleksi alat pinjaman</span>
+                  </div>
+                </div>
+                <span class="badge-emerald" id="cartBadgeText">0 item</span>
               </div>
 
+              <!-- Daftar Barang yang Ditambahkan -->
               <div class="cart-items-list" id="cartItemsContainer">
                 <!-- Rendered dynamically -->
               </div>
 
-              <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
-                <button class="btn btn-outline btn-sm" onclick="clearCart()">
-                  <i class="fa-solid fa-trash"></i> Kosongkan
-                </button>
-                <span style="font-size: 0.82rem; color: var(--text-muted);" id="cartSummaryCount">Total: 0 unit</span>
+              <!-- Footer Keranjang -->
+              <div class="cart-panel-footer">
+                <div class="cart-total-bar">
+                  <span class="cart-total-label">Total Unit Dipinjam:</span>
+                  <span class="cart-total-value" id="cartSummaryCount">Total: 0 unit</span>
+                </div>
+                <div class="cart-footer-actions">
+                  <button type="button" class="btn btn-outline btn-sm btn-clear-cart" onclick="clearCart()" title="Kosongkan keranjang">
+                    <i class="fa-solid fa-trash-can"></i> Kosongkan
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm btn-browse-catalog" onclick="switchTab('tab-alat')" title="Tambah alat lain dari katalog">
+                    <i class="fa-solid fa-plus"></i> Tambah Alat
+                  </button>
+                </div>
               </div>
-            </div>
+            </aside>
 
-            <!-- Form Data Peminjam -->
-            <div class="loan-form-card">
+            <!-- Kolom Kanan: Formulir Pengajuan Peminjaman -->
+            <main class="loan-form-container">
               <form id="loanForm" onsubmit="submitLoanApplication(event)">
                 
-                <!-- Quick Selection dari Database Mahasiswa & Dosen (Auto-fill Identity) -->
-                <div class="member-select-card">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label for="memberQuickSelect" style="font-size: 0.85rem; font-weight: 700; margin: 0; color: #10b981; display: flex; align-items: center; gap: 6px;">
-                      <i class="fa-solid fa-address-book"></i> Pilih Mahasiswa / Dosen Terdaftar (Otomatis Isi)
-                    </label>
-                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.7rem; border: 1px solid rgba(16, 185, 129, 0.3);">
-                      <i class="fa-solid fa-bolt"></i> 1-Klik Langsung Isi
-                    </span>
+                <!-- KARTU 1: Identitas Peminjam & Auto-Fill Cepat -->
+                <div class="loan-card-section">
+                  <div class="loan-card-header">
+                    <div class="loan-section-badge">1</div>
+                    <div>
+                      <h3 class="loan-section-title">Identitas Peminjam</h3>
+                      <p class="loan-section-subtitle">Pilih dari database civitas atau lengkapi data mahasiswa / dosen</p>
+                    </div>
                   </div>
-                  <select id="memberQuickSelect" class="form-control" onchange="handleMemberSelectChange(this.value)">
-                    <option value="">-- Ketik / Pilih Nama atau NIM/NIDN Civitas --</option>
-                  </select>
-                  <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 5px; display: flex; justify-content: space-between; align-items: center;">
-                    <span>💡 Memilih nama otomatis mengisi Peran, NIM, dan No. HP di bawah.</span>
-                    <button type="button" onclick="resetMemberQuickSelect()" style="font-size: 0.74rem; color: #38bdf8; background: none; border: none; cursor: pointer; text-decoration: underline;">
-                      <i class="fa-solid fa-rotate-left"></i> Bersihkan Isian
-                    </button>
-                  </div>
-                </div>
 
-                <label style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; display: block;">Peran Peminjam <span class="req">*</span></label>
-                <div class="form-role-selector">
-                  <div class="role-radio-card active" id="roleMhsCard" onclick="selectFormRole('Mahasiswa')">
-                    <i class="fa-solid fa-user-graduate" style="font-size: 1.4rem;"></i>
-                    <span>Mahasiswa</span>
-                  </div>
-                  <div class="role-radio-card" id="roleDosenCard" onclick="selectFormRole('Dosen')">
-                    <i class="fa-solid fa-chalkboard-user" style="font-size: 1.4rem;"></i>
-                    <span>Dosen / Peneliti</span>
-                  </div>
-                </div>
-                <input type="hidden" id="loanPeran" value="Mahasiswa">
-
-                <div class="form-row-2">
-                  <div class="form-group">
-                    <label for="loanNama">Nama Lengkap <span class="req">*</span></label>
-                    <input type="text" id="loanNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="loanNim" id="labelNimNidn">NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
-                    <input type="text" id="loanNim" class="form-control" placeholder="Contoh: 2320401005" required>
-                  </div>
-                </div>
-
-                <div class="form-row-2">
-                  <div class="form-group">
-                    <label for="loanJurusan">Fakultas / Program Studi</label>
-                    <input type="text" id="loanJurusan" class="form-control" value="Fakultas Tarbiyyah - Tadris IPA" readonly>
-                  </div>
-                  <div class="form-group">
-                    <label for="loanSemester" id="labelSemester">Semester</label>
-                    <select id="loanSemester" class="form-control">
-                      <option value="Semester 1">Semester 1</option>
-                      <option value="Semester 3">Semester 3</option>
-                      <option value="Semester 5" selected>Semester 5</option>
-                      <option value="Semester 7">Semester 7</option>
-                      <option value="Penelitian Skripsi / Tugas Akhir">Penelitian Skripsi / Tugas Akhir</option>
-                      <option value="Riset Dosen">Riset Dosen</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-row-2">
-                  <div class="form-group">
-                    <label for="loanMataKuliah">Mata Kuliah / Keperluan Praktikum <span class="req">*</span></label>
-                    <input type="text" id="loanMataKuliah" class="form-control" placeholder="Contoh: Praktikum Biologi Sel / Titrasi Kimia" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="loanDosen">Dosen Pengampu / Pembimbing <span class="req">*</span></label>
-                    <select id="loanDosen" class="form-control" required>
-                      <option value="">-- Pilih Dosen Pembina --</option>
-                      <option value="Dr. H. Muhammad Ilyas, M.Pd.">Dr. H. Muhammad Ilyas, M.Pd. (Kepala Lab)</option>
-                      <option value="Siti Rahmawati, M.Si.">Siti Rahmawati, M.Si. (Pembina Kimia)</option>
-                      <option value="Faisal Amir, M.Pd.">Faisal Amir, M.Pd. (Pembina Biologi)</option>
-                      <option value="Ilham Syarif, M.Si.">Ilham Syarif, M.Si. (Pembina Fisika)</option>
-                      <option value="Nurul Mukhlisah, M.Pd.">Nurul Mukhlisah, M.Pd. (Ketua Jurusan)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-row-2">
-                  <div class="form-group">
-                    <label for="loanTelepon">No. WhatsApp / Telepon Aktif <span class="req">*</span></label>
-                    <input type="tel" id="loanTelepon" class="form-control" placeholder="Contoh: 081244556677" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="loanTglPinjam">Tanggal Peminjaman <span class="req">*</span></label>
-                    <input type="date" id="loanTglPinjam" class="form-control" required>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="loanTglKembali">Tanggal Rencana Pengembalian <span class="req">*</span></label>
-                  <input type="date" id="loanTglKembali" class="form-control" required>
-                </div>
-
-                <!-- Canvas Tanda Tangan Digital -->
-                <div class="form-group">
-                  <label>Tanda Tangan Digital Peminjam (Pilar 1 Keamanan) <span class="req">*</span></label>
-                  <div class="signature-box-wrap">
-                    <canvas id="signatureCanvas" class="signature-canvas"></canvas>
-                    <div class="signature-controls">
-                      <span>Tanda tangani di area putih di atas</span>
-                      <button type="button" class="btn btn-outline btn-sm" onclick="clearSignature()">
-                        <i class="fa-solid fa-rotate-left"></i> Bersihkan
+                  <!-- Quick Auto-Fill Box -->
+                  <div class="member-quick-box">
+                    <div class="quick-box-header">
+                      <span class="quick-box-label">
+                        <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i> Isi Otomatis dari Database Civitas
+                      </span>
+                      <span class="quick-box-badge">Rekomendasi Cepat</span>
+                    </div>
+                    <div class="quick-box-select-wrap">
+                      <select id="memberQuickSelect" class="form-control" onchange="handleMemberSelectChange(this.value)">
+                        <option value="">-- Ketik / Pilih Nama atau NIM/NIDN Civitas --</option>
+                      </select>
+                    </div>
+                    <div class="quick-box-footer">
+                      <span><i class="fa-regular fa-lightbulb" style="color: #38bdf8;"></i> Memilih nama otomatis mengisi Peran, NIM, dan No. HP.</span>
+                      <button type="button" class="btn-quick-reset" onclick="resetMemberQuickSelect()">
+                        <i class="fa-solid fa-rotate-left"></i> Bersihkan Isian
                       </button>
+                    </div>
+                  </div>
+
+                  <!-- Role Selector (Mahasiswa vs Dosen) -->
+                  <div class="form-group" style="margin-top: 14px;">
+                    <label class="form-label-custom">Peran Peminjam <span class="req">*</span></label>
+                    <div class="form-role-selector">
+                      <div class="role-radio-card active" id="roleMhsCard" onclick="selectFormRole('Mahasiswa')">
+                        <div class="role-radio-indicator"><i class="fa-solid fa-check"></i></div>
+                        <div class="role-radio-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                        <div class="role-radio-text">
+                          <strong>Mahasiswa</strong>
+                          <small>Mahasiswa aktif praktikum Tadris IPA</small>
+                        </div>
+                      </div>
+
+                      <div class="role-radio-card" id="roleDosenCard" onclick="selectFormRole('Dosen')">
+                        <div class="role-radio-indicator"><i class="fa-solid fa-check"></i></div>
+                        <div class="role-radio-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div class="role-radio-text">
+                          <strong>Dosen / Peneliti</strong>
+                          <small>Dosen pengampu atau riset laboratorium</small>
+                        </div>
+                      </div>
+                    </div>
+                    <input type="hidden" id="loanPeran" value="Mahasiswa">
+                  </div>
+
+                  <!-- Form Fields Identitas -->
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label for="loanNama" class="form-label-custom"><i class="fa-solid fa-user"></i> Nama Lengkap <span class="req">*</span></label>
+                      <input type="text" id="loanNama" class="form-control" placeholder="Contoh: Muh. Ikhsan Basir" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="loanNim" id="labelNimNidn" class="form-label-custom"><i class="fa-solid fa-id-card"></i> NIM (Nomor Induk Mahasiswa) <span class="req">*</span></label>
+                      <input type="text" id="loanNim" class="form-control" placeholder="Contoh: 2320401005" required>
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label for="loanJurusan" class="form-label-custom"><i class="fa-solid fa-building-columns"></i> Fakultas / Program Studi</label>
+                      <input type="text" id="loanJurusan" class="form-control" value="Fakultas Tarbiyyah - Tadris IPA" readonly>
+                    </div>
+                    <div class="form-group">
+                      <label for="loanSemester" id="labelSemester" class="form-label-custom"><i class="fa-solid fa-book-open"></i> Semester</label>
+                      <select id="loanSemester" class="form-control">
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 5" selected>Semester 5</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Penelitian Skripsi / Tugas Akhir">Penelitian Skripsi / Tugas Akhir</option>
+                        <option value="Riset Dosen">Riset Dosen</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="loanTelepon" class="form-label-custom"><i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> No. WhatsApp / Telepon Aktif <span class="req">*</span></label>
+                    <input type="tel" id="loanTelepon" class="form-control" placeholder="Contoh: 081244556677" required>
+                    <small style="font-size: 0.74rem; color: var(--text-dim); display: block; margin-top: 4px;">
+                      Digunakan laboran untuk notifikasi status persetujuan & pengingat jadwal pengembalian.
+                    </small>
+                  </div>
+                </div>
+
+                <!-- KARTU 2: Rincian Praktikum & Jadwal -->
+                <div class="loan-card-section">
+                  <div class="loan-card-header">
+                    <div class="loan-section-badge">2</div>
+                    <div>
+                      <h3 class="loan-section-title">Agenda Praktikum & Jadwal</h3>
+                      <p class="loan-section-subtitle">Tentukan mata kuliah, dosen pembina, dan rentang tanggal peminjaman</p>
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label for="loanMataKuliah" class="form-label-custom"><i class="fa-solid fa-flask-vial"></i> Mata Kuliah / Keperluan Praktikum <span class="req">*</span></label>
+                      <input type="text" id="loanMataKuliah" class="form-control" placeholder="Contoh: Praktikum Biologi Sel / Titrasi Kimia" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="loanDosen" class="form-label-custom"><i class="fa-solid fa-chalkboard-user"></i> Dosen Pengampu / Pembimbing <span class="req">*</span></label>
+                      <select id="loanDosen" class="form-control" required>
+                        <option value="">-- Pilih Dosen Pembina --</option>
+                        <option value="Dr. H. Muhammad Ilyas, M.Pd.">Dr. H. Muhammad Ilyas, M.Pd. (Kepala Lab)</option>
+                        <option value="Siti Rahmawati, M.Si.">Siti Rahmawati, M.Si. (Pembina Kimia)</option>
+                        <option value="Faisal Amir, M.Pd.">Faisal Amir, M.Pd. (Pembina Biologi)</option>
+                        <option value="Ilham Syarif, M.Si.">Ilham Syarif, M.Si. (Pembina Fisika)</option>
+                        <option value="Nurul Mukhlisah, M.Pd.">Nurul Mukhlisah, M.Pd. (Ketua Jurusan)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="form-group">
+                      <label for="loanTglPinjam" class="form-label-custom"><i class="fa-regular fa-calendar-check"></i> Tanggal Peminjaman <span class="req">*</span></label>
+                      <input type="date" id="loanTglPinjam" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label for="loanTglKembali" class="form-label-custom"><i class="fa-regular fa-calendar-xmark"></i> Tanggal Rencana Pengembalian <span class="req">*</span></label>
+                      <input type="date" id="loanTglKembali" class="form-control" required>
+                    </div>
+                  </div>
+
+                  <div class="loan-policy-notice">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                      <strong>Ketentuan Batas Waktu:</strong>
+                      <span>Standar peminjaman alat laboratorium adalah maksimal 3 hari kerja. Harap mengembalikan tepat waktu agar jadwal praktikum kelas lain tidak terganggu.</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- Pakta Integritas -->
-                <div class="agreement-check">
-                  <input type="checkbox" id="checkAgreement" required>
-                  <label for="checkAgreement">
-                    Saya menyatakan data di atas benar, berjanji merawat alat sebaik-baiknya, mematuhi Protokol Keamanan Lab IAI YAPNAS Jeneponto, dan bersedia mengganti alat jika terjadi kerusakan/kehilangan dalam 7 hari kerja.
-                  </label>
+                <!-- KARTU 3: Validasi Keamanan & Tanda Tangan Digital -->
+                <div class="loan-card-section">
+                  <div class="loan-card-header">
+                    <div class="loan-section-badge">3</div>
+                    <div>
+                      <h3 class="loan-section-title">Autentikasi & Tanda Tangan Digital</h3>
+                      <p class="loan-section-subtitle">Bubuhkan tanda tangan elektronik peminjam sebagai pilar keamanan peminjaman</p>
+                    </div>
+                  </div>
+
+                  <!-- Canvas Tanda Tangan Digital -->
+                  <div class="form-group">
+                    <div class="signature-box-header">
+                      <label class="form-label-custom" style="margin: 0;"><i class="fa-solid fa-signature"></i> Tanda Tangan Digital Peminjam <span class="req">*</span></label>
+                      <button type="button" class="btn btn-outline btn-xs" onclick="clearSignature()" title="Bersihkan dan tanda tangani ulang" style="padding: 2px 8px; font-size: 0.75rem;">
+                        <i class="fa-solid fa-rotate-left"></i> Bersihkan Canvas
+                      </button>
+                    </div>
+                    <div class="signature-box-wrap">
+                      <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                      <div class="signature-canvas-hint">
+                        <i class="fa-solid fa-pen-nib" style="color: #10b981;"></i> Goreskan tanda tangan Anda dengan mouse atau jari tangan di atas area putih
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Pakta Integritas -->
+                  <div class="agreement-check-card">
+                    <input type="checkbox" id="checkAgreement" required>
+                    <label for="checkAgreement">
+                      <strong>Pakta Integritas Peminjam:</strong> Saya menyatakan seluruh data di atas adalah benar, berjanji merawat dan menjaga alat laboratorium sebaik-baiknya, mematuhi Protokol Keselamatan Lab Terpadu IAI YAPNAS Jeneponto, dan bersedia bertanggung jawab serta mengganti alat apabila terjadi kerusakan atau kehilangan dalam 7 hari kerja.
+                    </label>
+                  </div>
+
+                  <!-- Tombol Kirim Pengajuan -->
+                  <div class="loan-submit-wrap">
+                    <button type="submit" class="btn-submit-loan">
+                      <i class="fa-solid fa-paper-plane"></i>
+                      <span>Kirim Pengajuan Peminjaman & Terbitkan E-Tiket QR</span>
+                    </button>
+                  </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px;">
-                  <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan & Dapatkan E-Tiket QR
-                </button>
               </form>
-            </div>
+            </main>
           </div>
         </section>
 
@@ -2496,8 +2618,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261020_03"></script>
-  <script src="js/data.js?v=20261020_03"></script>
-  <script src="js/app.js?v=20261020_03"></script>
+  <script src="js/supabase.js?v=20261020_04"></script>
+  <script src="js/data.js?v=20261020_04"></script>
+  <script src="js/app.js?v=20261020_04"></script>
 </body>
 </html>

@@ -272,6 +272,12 @@ function switchTab(tabId) {
   };
   if (breadcrumb) breadcrumb.textContent = titles[tabId] || 'Laboratorium IPA';
 
+  if (tabId === 'tab-peminjaman') {
+    setTimeout(() => {
+      initSignaturePad();
+    }, 60);
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3046,11 +3052,14 @@ function renderCart() {
 
   if (STATE.cart.length === 0) {
     container.innerHTML = `
-      <div style="text-align: center; padding: 30px 10px; color: var(--text-muted);">
-        <i class="fa-solid fa-cart-arrow-down" style="font-size: 2.2rem; margin-bottom: 8px; color: var(--text-dim);"></i>
-        <p>Keranjang pinjaman kosong.</p>
-        <button class="btn btn-secondary btn-sm" onclick="switchTab('tab-alat')" style="margin-top: 8px;">
-          Pilih di Katalog Alat
+      <div class="cart-empty-state">
+        <div class="cart-empty-icon-wrap">
+          <i class="fa-solid fa-cart-arrow-down"></i>
+        </div>
+        <h4>Keranjang Masih Kosong</h4>
+        <p>Silakan telusuri katalog alat untuk memilih barang praktikum yang ingin dipinjam.</p>
+        <button type="button" class="btn btn-primary btn-sm" onclick="switchTab('tab-alat')" style="margin-top: 8px; font-weight: 700;">
+          <i class="fa-solid fa-magnifying-glass"></i> Telusuri Katalog Alat
         </button>
       </div>
     `;
@@ -3058,16 +3067,22 @@ function renderCart() {
   }
 
   container.innerHTML = STATE.cart.map(item => `
-    <div class="cart-item-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-surface-elevated); border-radius: var(--radius-md); margin-bottom: 8px;">
-      <div>
-        <div style="font-weight: 700; font-size: 0.88rem;">${item.nama}</div>
-        <div style="font-size: 0.74rem; color: var(--text-muted);">${item.kode} • ${item.jenis}</div>
+    <div class="cart-item-card">
+      <div class="cart-item-info">
+        <div class="cart-item-name" title="${item.nama}">${item.nama}</div>
+        <div class="cart-item-meta">
+          <span class="cart-item-code">${item.kode || 'LAB-IPA'}</span>
+          <span class="cart-item-dot">•</span>
+          <span class="cart-item-type">${item.jenis || 'Alat'}</span>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <button type="button" class="btn btn-outline btn-sm" style="padding: 2px 7px;" onclick="updateCartQty('${item.id}', -1)">-</button>
-        <span style="font-weight: 700; min-width: 18px; text-align: center;">${item.jumlah}</span>
-        <button type="button" class="btn btn-outline btn-sm" style="padding: 2px 7px;" onclick="updateCartQty('${item.id}', 1)">+</button>
-        <button type="button" style="background: none; border: none; color: #ef4444; margin-left: 4px; cursor: pointer;" onclick="removeFromCart('${item.id}')">
+      <div class="cart-item-controls">
+        <div class="cart-qty-pill">
+          <button type="button" class="btn-qty-adj" title="Kurangi" onclick="updateCartQty('${item.id}', -1)">−</button>
+          <span class="cart-qty-num">${item.jumlah}</span>
+          <button type="button" class="btn-qty-adj" title="Tambah" onclick="updateCartQty('${item.id}', 1)">+</button>
+        </div>
+        <button type="button" class="btn-cart-remove" title="Hapus dari keranjang" onclick="removeFromCart('${item.id}')">
           <i class="fa-solid fa-trash-can"></i>
         </button>
       </div>
@@ -3085,16 +3100,31 @@ function initSignaturePad() {
   const resizeCanvas = () => {
     const rect = sigCanvas.getBoundingClientRect();
     if (rect.width > 0) {
+      let tempImage = null;
+      if (STATE.sigHasContent && sigCanvas.width > 0 && sigCanvas.height > 0) {
+        try { tempImage = sigCanvas.toDataURL(); } catch (e) {}
+      }
       sigCanvas.width = rect.width;
-      sigCanvas.height = 120;
+      sigCanvas.height = 125;
       sigCtx.strokeStyle = '#064e3b';
       sigCtx.lineWidth = 2.5;
       sigCtx.lineCap = 'round';
       sigCtx.lineJoin = 'round';
+      if (tempImage) {
+        const img = new Image();
+        img.onload = () => { if (sigCtx) sigCtx.drawImage(img, 0, 0); };
+        img.src = tempImage;
+      }
     }
   };
 
   resizeCanvas();
+
+  if (sigCanvas.dataset.initialized === 'true') {
+    return;
+  }
+  sigCanvas.dataset.initialized = 'true';
+
   window.addEventListener('resize', resizeCanvas);
 
   const getPos = (e) => {
