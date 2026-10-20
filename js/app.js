@@ -2035,19 +2035,9 @@ function renderMembersView() {
             </div>
 
             <div class="member-card-footer">
-              <button type="button" class="btn-direct-loan" onclick="directLoanForMember('${m.id}')" title="Buat Pinjaman Baru untuk ${m.nama}">
+              <button type="button" class="btn-direct-loan" style="width: 100%; justify-content: center;" onclick="directLoanForMember('${m.id}')" title="Buat Pinjaman Baru untuk ${m.nama}">
                 <i class="fa-solid fa-cart-plus"></i> Pinjamkan Alat
               </button>
-              ${STATE.isAdminLoggedIn ? `
-              <div class="member-admin-actions">
-                <button type="button" class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data Civitas">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button type="button" class="btn btn-danger btn-xs" onclick="triggerDeleteMemberFlow('${m.id}')" title="Hapus dari Database">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
-              ` : ''}
             </div>
           </div>
         `;
@@ -2083,19 +2073,9 @@ function renderMembersView() {
             </td>
             <td><small style="color: var(--text-dim);">${m.email || '-'}</small></td>
             <td style="text-align: center;">
-              <div style="display: flex; gap: 4px; justify-content: center;">
-                <button class="btn btn-primary btn-xs" onclick="directLoanForMember('${m.id}')" title="Pinjamkan Alat">
-                  <i class="fa-solid fa-cart-plus"></i> Pinjamkan
-                </button>
-                ${STATE.isAdminLoggedIn ? `
-                <button class="btn btn-secondary btn-xs" onclick="triggerEditMemberFlow('${m.id}')" title="Edit Data">
-                  <i class="fa-solid fa-pen-to-square"></i>
-                </button>
-                <button class="btn btn-danger btn-xs" onclick="triggerDeleteMemberFlow('${m.id}')" title="Hapus">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-                ` : ''}
-              </div>
+              <button class="btn btn-primary btn-xs" onclick="directLoanForMember('${m.id}')" title="Pinjamkan Alat">
+                <i class="fa-solid fa-cart-plus"></i> Pinjamkan
+              </button>
             </td>
           </tr>
         `;
@@ -2367,6 +2347,10 @@ function triggerDeleteMemberFlow(memberId) {
    CRUD MODAL ACTIONS
    -------------------------------------------------------------------------- */
 function openAddMemberModal() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   document.getElementById('newMemberForm')?.reset();
   STATE.tempAddMemberPhoto = null;
   setAddMemberRole('Mahasiswa');
@@ -2418,6 +2402,10 @@ function saveNewMember(event) {
 }
 
 function openEditMemberModal(memberId) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   const member = STATE.members.find(m => m.id === memberId);
   if (!member) return;
 
@@ -2443,6 +2431,10 @@ function openEditMemberModal(memberId) {
 
 function saveEditedMember(event) {
   event.preventDefault();
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses ditolak! Anda harus login sebagai Admin.", "error");
+    return;
+  }
   const id = document.getElementById('editMemberId').value;
   const member = STATE.members.find(m => m.id === id);
   if (!member) return;
@@ -2472,6 +2464,10 @@ function saveEditedMember(event) {
 }
 
 function deleteMember(memberId) {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   const member = STATE.members.find(m => m.id === memberId);
   if (!member) return;
 
@@ -2573,6 +2569,10 @@ function downloadMemberTemplate() {
 }
 
 function openImportExcelModal() {
+  if (!STATE.isAdminLoggedIn) {
+    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    return;
+  }
   STATE.parsedExcelMembers = [];
   const previewSec = document.getElementById('excelPreviewSection');
   const btnConfirm = document.getElementById('btnConfirmImportExcel');
