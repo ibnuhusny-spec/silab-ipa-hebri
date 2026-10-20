@@ -309,7 +309,7 @@ function handleAdminLogin(event) {
     closeModal('adminLoginModal');
     updateRoleUi();
 
-    // Check if there was a pending admin action (e.g. from tab-members)
+    // Check if there was a pending admin action (e.g. from tab-members or org structure)
     if (STATE.pendingAdminAction) {
       const pending = STATE.pendingAdminAction;
       STATE.pendingAdminAction = null;
@@ -320,6 +320,18 @@ function handleAdminLogin(event) {
       } else if (pending.action === 'edit_member') {
         openEditMemberModal(pending.id);
         showToast("Login Admin Berhasil! Silakan edit data civitas.", "success");
+        return;
+      } else if (pending.action === 'add_org_person') {
+        openAddOrgPersonModal();
+        showToast("Login Admin Berhasil! Silakan tambah personil organisasi.", "success");
+        return;
+      } else if (pending.action === 'edit_org_person') {
+        editOrgPerson(pending.id);
+        showToast("Login Admin Berhasil! Silakan edit personil organisasi.", "success");
+        return;
+      } else if (pending.action === 'manage_org') {
+        openOrgStructureManager();
+        showToast("Login Admin Berhasil! Silakan kelola struktur organisasi.", "success");
         return;
       }
     }
@@ -832,7 +844,13 @@ function applyOrgTreeZoom() {
 
 function openOrgStructureManager() {
   if (!STATE.isAdminLoggedIn) {
-    showToast("Akses ditolak! Fitur pengelolaan struktur organisasi hanya dapat diakses melalui Dashboard Admin.", "warning");
+    STATE.pendingAdminAction = { action: 'manage_org' };
+    showToast("Akses kelola struktur organisasi membutuhkan autentikasi Admin Pengelola.", "info");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    openModal('adminLoginModal');
     return;
   }
   renderOrgStructureTable();
@@ -911,45 +929,114 @@ function renderOrgStructureTable() {
 
 function openAddOrgPersonModal() {
   if (!STATE.isAdminLoggedIn) {
-    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    STATE.pendingAdminAction = { action: 'add_org_person' };
+    showToast("Akses kelola personil membutuhkan autentikasi Admin Pengelola.", "info");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    openModal('adminLoginModal');
     return;
   }
+  renderOrgStructureTable();
   openModal('orgStructureModal');
   const card = document.getElementById('orgEditFormCard');
-  if (card) card.style.display = 'block';
-  document.getElementById('orgFormTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Tambah Personil / Jabatan Baru';
-  document.getElementById('orgPersonId').value = '';
-  document.getElementById('orgInputNama').value = '';
-  document.getElementById('orgInputRole').value = '';
-  document.getElementById('orgInputNip').value = '';
-  document.getElementById('orgInputUnit').value = '';
-  document.getElementById('orgInputLevel').value = '4';
-  document.getElementById('orgInputOrder').value = '1';
+  if (card) {
+    card.style.display = 'block';
+  }
+  const titleEl = document.getElementById('orgFormTitle');
+  if (titleEl) {
+    titleEl.innerHTML = '<i class="fa-solid fa-user-plus"></i> Tambah Personil / Jabatan Baru';
+  }
+  const personIdEl = document.getElementById('orgPersonId');
+  if (personIdEl) personIdEl.value = '';
+  const namaEl = document.getElementById('orgInputNama');
+  if (namaEl) namaEl.value = '';
+  const roleEl = document.getElementById('orgInputRole');
+  if (roleEl) roleEl.value = '';
+  const nipEl = document.getElementById('orgInputNip');
+  if (nipEl) nipEl.value = '';
+  const unitEl = document.getElementById('orgInputUnit');
+  if (unitEl) unitEl.value = '';
+  const levelEl = document.getElementById('orgInputLevel');
+  if (levelEl) levelEl.value = '4';
+  const orderEl = document.getElementById('orgInputOrder');
+  if (orderEl) orderEl.value = '1';
   updateOrgLevelHelper();
-  card.scrollIntoView({ behavior: 'smooth' });
+
+  if (card) {
+    setTimeout(() => {
+      const dialog = card.closest('.modal-dialog');
+      if (dialog) {
+        dialog.scrollTo({
+          top: card.offsetTop - 20,
+          behavior: 'smooth'
+        });
+      }
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const inputNama = document.getElementById('orgInputNama');
+      if (inputNama) inputNama.focus();
+    }, 100);
+  }
 }
 
 function editOrgPerson(id) {
   if (!STATE.isAdminLoggedIn) {
-    showToast("Akses khusus Pengelola Lab. Silakan masuk melalui Dashboard Admin.", "warning");
+    STATE.pendingAdminAction = { action: 'edit_org_person', id: id };
+    showToast("Akses edit personil membutuhkan autentikasi Admin Pengelola.", "info");
+    const emailInput = document.getElementById('adminEmailInput');
+    const passInput = document.getElementById('adminPasswordInput');
+    if (emailInput && !emailInput.value) emailInput.value = STATE.adminConfig?.email || 'admin.lab@iaiyapnas.ac.id';
+    if (passInput) passInput.value = '';
+    openModal('adminLoginModal');
     return;
   }
+  const person = (STATE.orgStructure || []).find(p => p.id === id);
+  if (!person) {
+    showToast("Data personil tidak ditemukan.", "error");
+    return;
+  }
+  renderOrgStructureTable();
   openModal('orgStructureModal');
-  const person = STATE.orgStructure.find(p => p.id === id);
-  if (!person) return;
 
   const card = document.getElementById('orgEditFormCard');
-  if (card) card.style.display = 'block';
-  document.getElementById('orgFormTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> Edit Personil: ' + person.name;
-  document.getElementById('orgPersonId').value = person.id;
-  document.getElementById('orgInputNama').value = person.name;
-  document.getElementById('orgInputRole').value = person.role;
-  document.getElementById('orgInputNip').value = person.nip || '';
-  document.getElementById('orgInputUnit').value = person.unit || '';
-  document.getElementById('orgInputLevel').value = person.level;
-  document.getElementById('orgInputOrder').value = person.order || 1;
+  if (card) {
+    card.style.display = 'block';
+  }
+  const titleEl = document.getElementById('orgFormTitle');
+  if (titleEl) {
+    titleEl.innerHTML = '<i class="fa-solid fa-user-pen"></i> Edit Personil: ' + person.name;
+  }
+  const personIdEl = document.getElementById('orgPersonId');
+  if (personIdEl) personIdEl.value = person.id;
+  const namaEl = document.getElementById('orgInputNama');
+  if (namaEl) namaEl.value = person.name || '';
+  const roleEl = document.getElementById('orgInputRole');
+  if (roleEl) roleEl.value = person.role || '';
+  const nipEl = document.getElementById('orgInputNip');
+  if (nipEl) nipEl.value = person.nip || '';
+  const unitEl = document.getElementById('orgInputUnit');
+  if (unitEl) unitEl.value = person.unit || '';
+  const levelEl = document.getElementById('orgInputLevel');
+  if (levelEl) levelEl.value = person.level || '4';
+  const orderEl = document.getElementById('orgInputOrder');
+  if (orderEl) orderEl.value = person.order || 1;
   updateOrgLevelHelper();
-  card.scrollIntoView({ behavior: 'smooth' });
+
+  if (card) {
+    setTimeout(() => {
+      const dialog = card.closest('.modal-dialog');
+      if (dialog) {
+        dialog.scrollTo({
+          top: card.offsetTop - 20,
+          behavior: 'smooth'
+        });
+      }
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const inputNama = document.getElementById('orgInputNama');
+      if (inputNama) inputNama.focus();
+    }, 100);
+  }
 }
 
 function cancelOrgEditForm() {
@@ -3712,9 +3799,18 @@ function exportDataToCSV() {
   showToast("File data inventaris CSV berhasil diunduh.", "success");
 }
 
+function openModal(modalId) {
+  const modal = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
 function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.classList.remove('active');
+  const modal = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
+  if (modal) {
+    modal.classList.remove('active');
+  }
 }
 
 function setupEventListeners() {

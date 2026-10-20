@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261017_09">
+  <link rel="stylesheet" href="css/style.css?v=20261020_02">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -2287,27 +2287,8 @@
           </span>
         </div>
 
-        <!-- Org Members Table / List with Level Up/Down & Order Actions -->
-        <div class="table-responsive" style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 10px;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width: 140px;">Tingkatan (Level)</th>
-                <th>Nama Lengkap & Gelar</th>
-                <th>Jabatan Struktural</th>
-                <th>NIP / NIM</th>
-                <th>Unit Kerja</th>
-                <th style="text-align: center; width: 200px;">Atur Posisi & Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="orgStructureTableBody">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Form Inline / Form Section: Tambah / Edit Personil -->
-        <div class="org-form-card" id="orgEditFormCard" style="display: none; margin-top: 20px; background: rgba(14, 23, 38, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 14px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <!-- Form Inline / Form Section: Tambah / Edit Personil (Displayed at top when active) -->
+        <div class="org-form-card" id="orgEditFormCard" style="display: none; margin-bottom: 20px; background: rgba(14, 23, 38, 0.95); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 14px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h4 id="orgFormTitle" style="font-size: 0.98rem; font-weight: 700; color: #38bdf8; margin: 0;">
               <i class="fa-solid fa-user-pen"></i> Form Tambah / Edit Personil Organisasi
@@ -2372,6 +2353,25 @@
               </button>
             </div>
           </form>
+        </div>
+
+        <!-- Org Members Table / List with Level Up/Down & Order Actions -->
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 10px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Tingkatan (Level)</th>
+                <th>Nama Lengkap & Gelar</th>
+                <th>Jabatan Struktural</th>
+                <th>NIP / NIM</th>
+                <th>Unit Kerja</th>
+                <th style="text-align: center; width: 200px;">Atur Posisi & Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="orgStructureTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -2498,8 +2498,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261017_09"></script>
-  <script src="js/data.js?v=20261017_09"></script>
-  <script src="js/app.js?v=20261017_09"></script>
+  <script src="js/supabase.js?v=20261020_02"></script>
+  <script src="js/data.js?v=20261020_02"></script>
+  <script src="js/app.js?v=20261020_02"></script>
 </body>
 </html>
