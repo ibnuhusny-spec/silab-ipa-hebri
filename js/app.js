@@ -3994,14 +3994,16 @@ async function handleReturnPhotoSelect(event) {
   if (!file) return;
 
   try {
-    const result = await compressAndOptimizeImage(file, { maxDimension: 800, quality: 0.80 });
+    // Kompresi khusus foto pengembalian: maks 650px & kualitas 75% (~25-35 KB)
+    // Sangat hemat kuota Supabase namun fisik alat (retak/bersih) tetap terlihat jelas
+    const result = await compressAndOptimizeImage(file, { maxDimension: 650, quality: 0.75 });
     STATE.returnPhotoBase64 = result.dataUrl;
     const preview = document.getElementById('returnPhotoPreview');
     if (preview) {
       preview.src = result.dataUrl;
       preview.style.display = 'block';
     }
-    showToast(`Foto kondisi fisik dioptimalkan ke ${result.compressedSizeKB} KB (tajam & hemat memori).`, "success");
+    showToast(`Foto fisik dioptimalkan ke ${result.compressedSizeKB} KB (sangat hemat penyimpanan cloud).`, "success");
   } catch (err) {
     showToast(err.message || "Gagal memproses foto pengembalian.", "error");
   }
