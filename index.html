@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261020_06">
+  <link rel="stylesheet" href="css/style.css?v=20261024_01">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -934,10 +934,21 @@
           <!-- Tracking Detail -->
           <div id="trackResultContainer" style="display: none;"></div>
 
-          <div class="section-header" style="margin-top: 36px;">
+          <div class="section-header" style="margin-top: 36px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div class="section-title-wrap">
-              <h3>Daftar Riwayat Transaksi Peminjaman</h3>
-              <p>Histori permohonan inventaris laboratorium</p>
+              <h3 style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: #10b981;"></i>
+                Daftar Riwayat Transaksi Peminjaman
+              </h3>
+              <p>Histori permohonan dan pelacakan inventaris laboratorium</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span id="loanHistoryCountBadge" class="badge" style="font-size: 0.78rem; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">
+                0 Transaksi
+              </span>
+              <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllLoansHistory()" id="btnClearAllLoans" style="font-size: 0.8rem; padding: 6px 14px; font-weight: 600;" title="Kosongkan seluruh riwayat transaksi peminjaman">
+                <i class="fa-solid fa-trash-can"></i> Kosongkan Riwayat (Clear)
+              </button>
             </div>
           </div>
 
@@ -2680,8 +2691,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261020_06"></script>
-  <script src="js/data.js?v=20261020_06"></script>
-  <script src="js/app.js?v=20261020_06"></script>
+  <script src="js/supabase.js?v=20261024_01"></script>
+  <script src="js/data.js?v=20261024_01"></script>
+  <script src="js/app.js?v=20261024_01"></script>
 </body>
 </html>

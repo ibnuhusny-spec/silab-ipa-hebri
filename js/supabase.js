@@ -196,6 +196,22 @@ class SupabaseService {
     }
   }
 
+  // Clear All Loans Asynchronously
+  async clearLoans() {
+    if (!this.client || this.status === 'quota_exceeded') return false;
+    try {
+      const { error } = await this.client.from('silab_loans').delete().neq('tiket', '___NON_EXISTING___');
+      if (error) {
+        console.warn("Gagal mengosongkan silab_loans di cloud:", error.message);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn("Error mengosongkan silab_loans di cloud:", e);
+      return false;
+    }
+  }
+
   // Push All Local State to Supabase
   async pushAllLocalToCloud(state) {
     if (!this.client) throw new Error("Supabase client belum diinisialisasi.");

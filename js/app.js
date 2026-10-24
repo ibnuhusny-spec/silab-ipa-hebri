@@ -3455,32 +3455,152 @@ function renderTrackingDetails(loan) {
   `;
 }
 
-function renderLoansTable() {
-  const tbody = document.getElementById('allLoansTableBody');
-  if (!tbody) return;
+function restoreLoanItemsStock(loan) {
+  if (!loan || !loan.items) return;
+  if (loan.status === 'Dipinjam' || loan.status === 'Menunggu Verifikasi') {
+    loan.items.forEach(cartItem => {
+      const qty = parseInt(cartItem.jumlah) || 1;
+      const alat = STATE.alat.find(a => a.id === cartItem.id || a.nama === cartItem.nama);
+      if (alat) {
+        alat.stokTersedia = Math.min(alat.stok, (alat.stokTersedia || 0) + qty);
+        if (alat.stokTersedia > 0 && alat.status === 'Dipinjam') {
+          alat.status = 'Tersedia';
+        }
+      }
+      const fas = STATE.fasilitas.find(f => f.id === cartItem.id || f.nama === cartItem.nama);
+      if (fas) {
+        fas.stokTersedia = Math.min(fas.stok, (fas.stokTersedia || 0) + qty);
+        if (fas.stokTersedia > 0 && fas.status === 'Dipinjam') {
+          fas.status = 'Tersedia';
+        }
+      }
+    });
+  }
+}
 
-  if (STATE.loans.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px;">Belum ada riwayat transaksi peminjaman.</td></tr>`;
+function deleteSingleLoan(ticket) {
+  const loan = STATE.loans.find(l => l.tiket === ticket);
+  if (!loan) {
+    showToast("Data transaksi tidak ditemukan.", "error");
     return;
   }
 
-  tbody.innerHTML = STATE.loans.map(loan => `
-    <tr>
-      <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${loan.tiket}</td>
-      <td><strong>${loan.nama}</strong></td>
-      <td><span class="badge">${loan.peran}</span><br><small style="color: var(--text-dim);">${loan.nim}</small></td>
-      <td>${loan.mataKuliah}</td>
-      <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${loan.items.map(i => `${i.nama} (${i.jumlah})`).join(', ')}</td>
-      <td><small>${loan.tglPinjam} - ${loan.tglRencanaKembali}</small></td>
-      <td><span class="status-badge ${loan.status.toLowerCase().replace(/\s+/g, '-')}">${loan.status}</span></td>
-      <td>
-        <div style="display: flex; gap: 4px;">
-          <button class="btn btn-outline btn-sm" onclick="trackSingleLoan('${loan.tiket}')" title="Lacak"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn btn-secondary btn-sm" onclick="printLoanReceipt('${loan.tiket}')" title="Cetak"><i class="fa-solid fa-print"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  const itemsList = (loan.items || []).map(i => `${i.nama} (${i.jumlah} unit)`).join(', ');
+  const konfirmasi = confirm(`Hapus riwayat transaksi peminjaman ini?\n\n• Nomor Tiket: ${loan.tiket}\n• Peminjam: ${loan.nama} (${loan.nim || '-'})\n• Barang: ${itemsList}\n• Status: ${loan.status}\n\nPerhatian: Data yang dihapus tidak dapat dipulihkan.`);
+  if (!konfirmasi) return;
+
+  // Kembalikan ketersediaan stok jika status masih aktif dipinjam/antrean
+  restoreLoanItemsStock(loan);
+
+  // Hapus transaksi dari state lokal
+  STATE.loans = STATE.loans.filter(l => l.tiket !== ticket);
+
+  // Hapus dari database cloud Supabase jika terkoneksi
+  if (typeof SILAB_SUPABASE !== 'undefined' && SILAB_SUPABASE.deleteItem) {
+    SILAB_SUPABASE.deleteItem('silab_loans', 'tiket', ticket);
+  }
+
+  saveState();
+  renderAllViews();
+
+  // Bersihkan panel tracking jika tiket yang sedang dicari dihapus
+  const trackContainer = document.getElementById('trackResultContainer');
+  const trackInput = document.getElementById('trackSearchInput');
+  if (trackInput && trackInput.value.trim().toUpperCase() === ticket.toUpperCase()) {
+    trackInput.value = '';
+    if (trackContainer) trackContainer.style.display = 'none';
+  }
+
+  showToast(`Transaksi peminjaman "${ticket}" (${loan.nama}) berhasil dihapus.`, "success");
+}
+
+function clearAllLoansHistory() {
+  if (!STATE.loans || STATE.loans.length === 0) {
+    showToast("Riwayat transaksi peminjaman sudah kosong.", "info");
+    return;
+  }
+
+  const totalCount = STATE.loans.length;
+  const konfirmasi = confirm(`KONFIRMASI PENGOSONGAN RIWAYAT:\n\nApakah Anda yakin ingin MENGOSONGKAN SELURUH ${totalCount} RIWAYAT transaksi peminjaman?\n\nSemua catatan histori peminjaman akan dibersihkan dari penyimpanan lokal dan sinkronisasi cloud.\nTindakan ini TIDAK DAPAT DIBATALKAN.`);
+  if (!konfirmasi) return;
+
+  // Kembalikan ketersediaan stok untuk semua transaksi yang masih aktif
+  STATE.loans.forEach(loan => {
+    restoreLoanItemsStock(loan);
+  });
+
+  // Kosongkan array riwayat peminjaman
+  STATE.loans = [];
+
+  // Kosongkan di database cloud Supabase
+  if (typeof SILAB_SUPABASE !== 'undefined' && SILAB_SUPABASE.clearLoans) {
+    SILAB_SUPABASE.clearLoans();
+  }
+
+  saveState();
+  renderAllViews();
+
+  // Sembunyikan panel hasil tracking jika sedang terbuka
+  const trackContainer = document.getElementById('trackResultContainer');
+  const trackInput = document.getElementById('trackSearchInput');
+  if (trackInput) trackInput.value = '';
+  if (trackContainer) trackContainer.style.display = 'none';
+
+  showToast(`Seluruh riwayat transaksi (${totalCount} transaksi) berhasil dikosongkan.`, "info");
+}
+
+function renderLoansTable() {
+  const tbody = document.getElementById('allLoansTableBody');
+  const countBadge = document.getElementById('loanHistoryCountBadge');
+  const clearBtn = document.getElementById('btnClearAllLoans');
+
+  const totalLoans = STATE.loans ? STATE.loans.length : 0;
+
+  if (countBadge) {
+    countBadge.textContent = `${totalLoans} Transaksi`;
+  }
+  if (clearBtn) {
+    clearBtn.disabled = totalLoans === 0;
+    clearBtn.style.opacity = totalLoans === 0 ? '0.5' : '1';
+    clearBtn.style.cursor = totalLoans === 0 ? 'not-allowed' : 'pointer';
+  }
+
+  if (!tbody) return;
+
+  if (totalLoans === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+          <i class="fa-solid fa-clipboard-check" style="font-size: 2.2rem; color: var(--text-dim); margin-bottom: 8px; display: block;"></i>
+          <p style="margin: 0; font-weight: 600;">Belum ada riwayat transaksi peminjaman.</p>
+          <small style="color: var(--text-dim);">Permohonan inventaris baru akan otomatis muncul di sini.</small>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = STATE.loans.map(loan => {
+    const itemsSummary = (loan.items || []).map(i => `${i.nama} (${i.jumlah})`).join(', ');
+    return `
+      <tr>
+        <td style="font-family: var(--font-mono); font-weight: 700; color: #10b981;">${loan.tiket}</td>
+        <td><strong>${loan.nama}</strong></td>
+        <td><span class="badge">${loan.peran || 'Mahasiswa'}</span><br><small style="color: var(--text-dim);">${loan.nim || '-'}</small></td>
+        <td>${loan.mataKuliah || '-'}</td>
+        <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${itemsSummary}">${itemsSummary || '-'}</td>
+        <td><small>${loan.tglPinjam || '-'} - ${loan.tglRencanaKembali || '-'}</small></td>
+        <td><span class="status-badge ${(loan.status || '').toLowerCase().replace(/\s+/g, '-')}">${loan.status || 'Diajukan'}</span></td>
+        <td>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn btn-outline btn-sm" onclick="trackSingleLoan('${loan.tiket}')" title="Lacak Status Tiket" style="padding: 4px 8px;"><i class="fa-solid fa-eye"></i></button>
+            <button class="btn btn-secondary btn-sm" onclick="printLoanReceipt('${loan.tiket}')" title="Cetak Bukti Pinjam" style="padding: 4px 8px;"><i class="fa-solid fa-print"></i></button>
+            <button class="btn btn-outline-danger btn-sm" onclick="deleteSingleLoan('${loan.tiket}')" title="Hapus Riwayat Transaksi Ini" style="padding: 4px 8px;"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function trackSingleLoan(ticket) {

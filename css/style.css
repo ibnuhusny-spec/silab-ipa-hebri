@@ -1692,6 +1692,19 @@ img, picture, svg, video, canvas {
   background: #b91c1c;
 }
 
+.btn-outline-danger {
+  background: transparent;
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-outline-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+}
+
 .btn-icon {
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
