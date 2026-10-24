@@ -3338,117 +3338,477 @@ function printReceiptFromSuccess() {
    8. TRACKING & RETURN
    ========================================================================== */
 function searchTrackingLoan() {
-  const query = document.getElementById('trackSearchInput').value.trim().toLowerCase();
+  const inputEl = document.getElementById('trackSearchInput');
+  const query = inputEl ? inputEl.value.trim().toLowerCase() : '';
   const container = document.getElementById('trackResultContainer');
+  if (!container) return;
 
   if (!query) {
     showToast("Ketik nomor tiket atau NIM peminjam.", "warning");
     return;
   }
 
-  const match = STATE.loans.find(l => 
-    l.tiket.toLowerCase() === query || 
-    l.nim.toLowerCase() === query
+  // Exact match first
+  let match = (STATE.loans || []).find(l => 
+    (l.tiket && l.tiket.trim().toLowerCase() === query) || 
+    (l.nim && l.nim.trim().toLowerCase() === query)
   );
+
+  // Partial match fallback
+  if (!match) {
+    match = (STATE.loans || []).find(l => 
+      (l.tiket && l.tiket.toLowerCase().includes(query)) || 
+      (l.nim && l.nim.toLowerCase().includes(query))
+    );
+  }
 
   if (!match) {
     container.style.display = 'block';
     container.innerHTML = `
-      <div class="track-result-panel" style="border-left: 4px solid #ef4444; padding: 20px; background: var(--bg-card); border-radius: var(--radius-lg); text-align: center;">
-        <i class="fa-solid fa-circle-exclamation" style="font-size: 2rem; color: #ef4444; margin-bottom: 8px;"></i>
-        <h4>Tiket "${query}" Tidak Ditemukan</h4>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Periksa kembali nomor tiket (contoh: PNJ-202610-001) atau gunakan NIM.</p>
+      <div class="track-not-found-card">
+        <div class="track-not-found-icon">
+          <i class="fa-solid fa-file-circle-question"></i>
+        </div>
+        <h4>Tiket "${query.toUpperCase()}" Tidak Ditemukan</h4>
+        <p>Periksa kembali nomor tiket (contoh: <code>PNJ-202610-909</code>) atau gunakan NIM/NIDN peminjam yang terdaftar.</p>
       </div>
     `;
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }
 
   renderTrackingDetails(match);
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyTicketNumber(ticket) {
+  if (!ticket) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ticket).then(() => {
+      showToast(`Nomor tiket ${ticket} berhasil disalin ke clipboard!`, "success");
+    }).catch(() => {
+      showToast(`Nomor Tiket: ${ticket}`, "info");
+    });
+  } else {
+    showToast(`Nomor Tiket: ${ticket}`, "info");
+  }
 }
 
 function renderTrackingDetails(loan) {
   const container = document.getElementById('trackResultContainer');
+  if (!container) return;
   container.style.display = 'block';
 
-  let step1 = true;
-  let step2 = loan.status !== 'Menunggu Verifikasi';
-  let step3 = loan.status === 'Dipinjam' || loan.status === 'Selesai';
-  let step4 = loan.fotoPengembalian !== null || loan.status === 'Selesai';
-  let step5 = loan.status === 'Selesai';
+  const status = loan.status || 'Diajukan';
+  const isDitolak = status === 'Ditolak';
+  const isDamaged = status === 'Klaim Ganti Rugi' || (loan.statusKondisi && (loan.statusKondisi.includes('Pecah') || loan.statusKondisi.includes('Kerusakan')));
+  const isSelesai = status === 'Selesai';
+  const isDipinjam = status === 'Dipinjam';
+  const isMenunggu = status === 'Menunggu Verifikasi';
+
+  const totalUnits = (loan.items || []).reduce((acc, i) => acc + (parseInt(i.jumlah) || 1), 0);
+
+  // Milestone 1: Pengajuan
+  const s1 = {
+    circleClass: 'is-completed',
+    icon: 'fa-solid fa-file-signature',
+    title: '1. Pengajuan',
+    tag: 'Terkirim & Sah',
+    tagClass: 'tag-success'
+  };
+
+  // Milestone 2: Approval Laboran
+  let s2 = {
+    circleClass: 'is-completed',
+    icon: 'fa-solid fa-clipboard-check',
+    title: '2. Approval',
+    tag: 'Disetujui',
+    tagClass: 'tag-success'
+  };
+  if (isMenunggu) {
+    s2 = {
+      circleClass: 'is-active',
+      icon: 'fa-solid fa-clock',
+      title: '2. Approval',
+      tag: 'Sedang Ditinjau',
+      tagClass: 'tag-info'
+    };
+  } else if (isDitolak) {
+    s2 = {
+      circleClass: 'is-danger',
+      icon: 'fa-solid fa-xmark',
+      title: '2. Approval',
+      tag: 'Ditolak',
+      tagClass: 'tag-danger'
+    };
+  }
+
+  // Milestone 3: Digunakan
+  let s3 = {
+    circleClass: 'is-pending',
+    icon: 'fa-solid fa-flask-vial',
+    title: '3. Digunakan',
+    tag: 'Menunggu',
+    tagClass: 'tag-muted'
+  };
+  if (isDipinjam) {
+    s3 = {
+      circleClass: 'is-active',
+      icon: 'fa-solid fa-hand-holding-hand',
+      title: '3. Digunakan',
+      tag: 'Aktif Dipakai',
+      tagClass: 'tag-info'
+    };
+  } else if (isSelesai || isDamaged) {
+    s3 = {
+      circleClass: 'is-completed',
+      icon: 'fa-solid fa-check',
+      title: '3. Digunakan',
+      tag: 'Selesai Pakai',
+      tagClass: 'tag-success'
+    };
+  }
+
+  // Milestone 4: Cek Fisik & Foto
+  let s4 = {
+    circleClass: 'is-pending',
+    icon: 'fa-solid fa-camera',
+    title: '4. Cek Foto',
+    tag: 'Belum Diunggah',
+    tagClass: 'tag-muted'
+  };
+  if (loan.fotoPengembalian) {
+    if (isDamaged) {
+      s4 = {
+        circleClass: 'is-danger',
+        icon: 'fa-solid fa-triangle-exclamation',
+        title: '4. Cek Foto',
+        tag: 'Kerusakan / Pecah',
+        tagClass: 'tag-danger'
+      };
+    } else {
+      s4 = {
+        circleClass: 'is-completed',
+        icon: 'fa-solid fa-camera-retro',
+        title: '4. Cek Foto',
+        tag: 'Foto Terverifikasi',
+        tagClass: 'tag-success'
+      };
+    }
+  } else if (isDipinjam) {
+    s4 = {
+      circleClass: 'is-active',
+      icon: 'fa-solid fa-camera',
+      title: '4. Cek Foto',
+      tag: 'Wajib Unggah Foto',
+      tagClass: 'tag-info'
+    };
+  } else if (isSelesai) {
+    s4 = {
+      circleClass: 'is-completed',
+      icon: 'fa-solid fa-camera-retro',
+      title: '4. Cek Foto',
+      tag: 'Kondisi Bersih',
+      tagClass: 'tag-success'
+    };
+  }
+
+  // Milestone 5: Selesai
+  let s5 = {
+    circleClass: 'is-pending',
+    icon: 'fa-solid fa-circle-check',
+    title: '5. Selesai',
+    tag: 'Tahap Akhir',
+    tagClass: 'tag-muted'
+  };
+  if (isSelesai) {
+    s5 = {
+      circleClass: 'is-completed',
+      icon: 'fa-solid fa-circle-check',
+      title: '5. Selesai',
+      tag: 'Aset Pulih',
+      tagClass: 'tag-success'
+    };
+  } else if (isDamaged) {
+    s5 = {
+      circleClass: 'is-danger',
+      icon: 'fa-solid fa-triangle-exclamation',
+      title: '5. Selesai',
+      tag: 'Kewajiban Ganti',
+      tagClass: 'tag-danger'
+    };
+  }
+
+  // Progress Bar Line calculation
+  let progressPct = 12;
+  let activeStepLabel = 'Tahap 1 dari 5 (Pengajuan Formulir Sah)';
+  if (isMenunggu) {
+    progressPct = 25;
+    activeStepLabel = 'Tahap 2 dari 5 (Sedang Menunggu Review Laboran)';
+  } else if (isDitolak) {
+    progressPct = 25;
+    activeStepLabel = 'Permohonan Ditolak oleh Laboran';
+  } else if (isDipinjam) {
+    if (loan.fotoPengembalian) {
+      progressPct = 75;
+      activeStepLabel = 'Tahap 4 dari 5 (Pemeriksaan Fisik Pengembalian)';
+    } else {
+      progressPct = 50;
+      activeStepLabel = 'Tahap 3 dari 5 (Alat Aktif Digunakan Praktikum)';
+    }
+  } else if (isDamaged) {
+    progressPct = 85;
+    activeStepLabel = 'Tahap 4 dari 5 (Klaim Kerusakan & Ganti Rugi)';
+  } else if (isSelesai) {
+    progressPct = 100;
+    activeStepLabel = 'Tahap 5 dari 5 (Transaksi Selesai & Ditutup)';
+  }
+
+  const statusSlug = (status || '').toLowerCase().replace(/\s+/g, '-');
+  const roleBadgeClass = loan.peran === 'Dosen' ? 'badge-role-dosen' : 'badge-role-mhs';
 
   container.innerHTML = `
-    <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 5px solid #10b981; border-radius: var(--radius-xl); padding: 24px; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+    <div class="track-detail-card">
+      <!-- 1. Header Row -->
+      <div class="track-header-row">
         <div>
-          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Status Tiket Peminjaman</span>
-          <h3 style="font-family: var(--font-mono); color: #10b981; font-size: 1.3rem;">${loan.tiket}</h3>
-          <div style="font-size: 0.88rem; font-weight: 600;">${loan.nama} (${loan.nim}) • ${loan.peran}</div>
+          <div class="track-kicker">
+            <i class="fa-solid fa-receipt" style="color: #10b981;"></i> Status Tiket Peminjaman
+          </div>
+          <div class="track-ticket-wrap">
+            <h3 class="track-ticket-code">${loan.tiket}</h3>
+            <button type="button" class="btn-copy-ticket" onclick="copyTicketNumber('${loan.tiket}')" title="Salin Nomor Tiket">
+              <i class="fa-regular fa-copy"></i> Salin
+            </button>
+          </div>
+          <div class="track-borrower-info">
+            <div class="track-borrower-avatar">
+              <i class="fa-solid ${loan.peran === 'Dosen' ? 'fa-user-tie' : 'fa-user-graduate'}"></i>
+            </div>
+            <span class="track-borrower-name">${loan.nama}</span>
+            <span class="track-borrower-id">(${loan.nim || '-'})</span>
+            <span class="${roleBadgeClass}">
+              <i class="fa-solid ${loan.peran === 'Dosen' ? 'fa-chalkboard-user' : 'fa-graduation-cap'}"></i>
+              ${loan.peran}
+            </span>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <span class="status-badge ${loan.status.toLowerCase().replace(/\s+/g, '-')}">${loan.status}</span>
-          <div style="margin-top: 6px;">
-            <button class="btn btn-outline btn-sm" onclick="printLoanReceipt('${loan.tiket}')">
+
+        <div class="track-header-actions">
+          <span class="status-badge ${statusSlug}">
+            <span class="pulsing-status-dot"></span> ${loan.status}
+          </span>
+          <div class="track-btn-group">
+            <button class="btn btn-outline btn-sm" onclick="printLoanReceipt('${loan.tiket}')" title="Cetak Surat Bukti Peminjaman (PDF)">
               <i class="fa-solid fa-print"></i> Cetak Bukti Pinjam
             </button>
+            ${isDamaged && status === 'Klaim Ganti Rugi' ? `
+              <button class="btn btn-warning btn-sm" onclick="printDamageClaimReceipt('${loan.tiket}')" title="Cetak Berita Acara Kerusakan">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cetak BAP Ganti Rugi
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
 
-      <!-- Stepper 5 Pilar -->
-      <div class="stepper-wrap">
-        <div class="step-node ${step1 ? 'completed' : ''}">
-          <div class="step-circle"><i class="fa-solid fa-file-signature"></i></div>
-          <div class="step-label">Pengajuan</div>
+      <!-- 2. Stepper 5 Pilar Visual Progress Bar -->
+      <div class="track-timeline-wrapper">
+        <div class="track-timeline-header">
+          <div class="track-timeline-heading">
+            <i class="fa-solid fa-timeline" style="color: #10b981;"></i>
+            <span>Alur Riwayat Transaksi Inventaris</span>
+          </div>
+          <span class="track-timeline-badge">${activeStepLabel}</span>
         </div>
-        <div class="step-node ${step2 ? 'completed active' : ''}">
-          <div class="step-circle"><i class="fa-solid fa-clipboard-check"></i></div>
-          <div class="step-label">Approval</div>
-        </div>
-        <div class="step-node ${step3 ? 'completed active' : ''}">
-          <div class="step-circle"><i class="fa-solid fa-hand-holding-hand"></i></div>
-          <div class="step-label">Digunakan</div>
-        </div>
-        <div class="step-node ${step4 ? 'completed active' : ''}">
-          <div class="step-circle"><i class="fa-solid fa-camera"></i></div>
-          <div class="step-label">Cek Foto</div>
-        </div>
-        <div class="step-node ${step5 ? 'completed active' : ''}">
-          <div class="step-circle"><i class="fa-solid fa-circle-check"></i></div>
-          <div class="step-label">Selesai</div>
+
+        <div class="track-timeline-scroll">
+          <div class="track-timeline-track">
+            <div class="track-timeline-line">
+              <div class="track-timeline-line-fill" style="width: ${progressPct}%;"></div>
+            </div>
+
+            <!-- Node 1: Pengajuan -->
+            <div class="track-step-node">
+              <div class="track-step-circle ${s1.circleClass}">
+                <i class="${s1.icon}"></i>
+                <span class="track-circle-check"><i class="fa-solid fa-check"></i></span>
+              </div>
+              <div class="track-step-title">${s1.title}</div>
+              <span class="track-step-tag ${s1.tagClass}">${s1.tag}</span>
+            </div>
+
+            <!-- Node 2: Approval -->
+            <div class="track-step-node">
+              <div class="track-step-circle ${s2.circleClass}">
+                <i class="${s2.icon}"></i>
+                ${s2.circleClass === 'is-completed' ? '<span class="track-circle-check"><i class="fa-solid fa-check"></i></span>' : ''}
+              </div>
+              <div class="track-step-title">${s2.title}</div>
+              <span class="track-step-tag ${s2.tagClass}">${s2.tag}</span>
+            </div>
+
+            <!-- Node 3: Digunakan -->
+            <div class="track-step-node">
+              <div class="track-step-circle ${s3.circleClass}">
+                <i class="${s3.icon}"></i>
+                ${s3.circleClass === 'is-completed' ? '<span class="track-circle-check"><i class="fa-solid fa-check"></i></span>' : ''}
+              </div>
+              <div class="track-step-title">${s3.title}</div>
+              <span class="track-step-tag ${s3.tagClass}">${s3.tag}</span>
+            </div>
+
+            <!-- Node 4: Cek Fisik & Foto -->
+            <div class="track-step-node">
+              <div class="track-step-circle ${s4.circleClass}">
+                <i class="${s4.icon}"></i>
+                ${s4.circleClass === 'is-completed' ? '<span class="track-circle-check"><i class="fa-solid fa-check"></i></span>' : ''}
+              </div>
+              <div class="track-step-title">${s4.title}</div>
+              <span class="track-step-tag ${s4.tagClass}">${s4.tag}</span>
+            </div>
+
+            <!-- Node 5: Selesai -->
+            <div class="track-step-node">
+              <div class="track-step-circle ${s5.circleClass}">
+                <i class="${s5.icon}"></i>
+                ${s5.circleClass === 'is-completed' ? '<span class="track-circle-check"><i class="fa-solid fa-check"></i></span>' : ''}
+              </div>
+              <div class="track-step-title">${s5.title}</div>
+              <span class="track-step-tag ${s5.tagClass}">${s5.tag}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 18px;">
-        <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
-          <div><strong>Mata Kuliah:</strong> ${loan.mataKuliah}</div>
-          <div><strong>Dosen Pembimbing:</strong> ${loan.dosenPengampu}</div>
-          <div><strong>Jadwal Pinjam:</strong> ${loan.tglPinjam} s/d ${loan.tglRencanaKembali}</div>
+      <!-- 3. Details Grid -->
+      <div class="track-info-grid">
+        <!-- Box 1: Agenda & Jadwal -->
+        <div class="track-info-card">
+          <div class="track-box-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i>
+              <span>Agenda & Jadwal Praktikum</span>
+            </div>
+          </div>
+          <div class="track-detail-rows">
+            <div class="track-detail-row">
+              <span class="track-detail-label"><i class="fa-solid fa-book"></i> Mata Kuliah</span>
+              <span class="track-detail-val">${loan.mataKuliah || '-'}</span>
+            </div>
+            <div class="track-detail-row">
+              <span class="track-detail-label"><i class="fa-solid fa-chalkboard-user"></i> Dosen Pembimbing</span>
+              <span class="track-detail-val">${loan.dosenPengampu || '-'}</span>
+            </div>
+            <div class="track-detail-row">
+              <span class="track-detail-label"><i class="fa-solid fa-calendar-check"></i> Jadwal Pinjam</span>
+              <span class="track-detail-val">${loan.tglPinjam || '-'}</span>
+            </div>
+            <div class="track-detail-row">
+              <span class="track-detail-label"><i class="fa-solid fa-calendar-xmark"></i> Batas Pengembalian</span>
+              <span class="track-detail-val highlight-return-date">${loan.tglRencanaKembali || '-'}</span>
+            </div>
+            ${loan.keperluan ? `
+              <div class="track-detail-row">
+                <span class="track-detail-label"><i class="fa-solid fa-clipboard-list"></i> Keperluan</span>
+                <span class="track-detail-val">${loan.keperluan}</span>
+              </div>
+            ` : ''}
+          </div>
         </div>
-        <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md); font-size: 0.82rem;">
-          <strong>Daftar Barang:</strong>
-          <ul style="list-style: none; padding: 0; margin-top: 4px;">
-            ${loan.items.map(i => `<li>• ${i.nama} (<strong>${i.jumlah} unit</strong>)</li>`).join('')}
-          </ul>
+
+        <!-- Box 2: Daftar Barang -->
+        <div class="track-info-card">
+          <div class="track-box-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-boxes-stacked" style="color: #10b981;"></i>
+              <span>Daftar Inventaris Dipinjam</span>
+            </div>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">
+              ${totalUnits} Unit Total
+            </span>
+          </div>
+          <div class="track-items-list">
+            ${(loan.items || []).map(i => `
+              <div class="track-item-pill">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-flask" style="color: #38bdf8; font-size: 0.85rem;"></i>
+                  <span class="track-item-name">${i.nama}</span>
+                </div>
+                <span class="track-item-qty">${i.jumlah} unit</span>
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
 
-      ${loan.status === 'Dipinjam' ? `
-        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-md); padding: 16px; text-align: center;">
-          <h4 style="color: #10b981; margin-bottom: 4px;"><i class="fa-solid fa-camera"></i> Siap Mengembalikan Alat?</h4>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">
-            Unggah foto fisik alat yang telah dibersihkan untuk verifikasi Laboran.
-          </p>
-          <button class="btn btn-primary btn-sm" onclick="openReturnModal('${loan.tiket}')">
+      <!-- 4. Action Banner / Siap Mengembalikan Alat -->
+      ${isDipinjam ? `
+        <div class="track-return-cta">
+          <div class="track-return-cta-text">
+            <div class="track-return-cta-icon">
+              <i class="fa-solid fa-camera"></i>
+            </div>
+            <div>
+              <h4 style="margin: 0 0 4px; font-size: 1rem; color: #10b981; font-weight: 800;">
+                Siap Mengembalikan Alat Praktikum?
+              </h4>
+              <p style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+                Pastikan alat telah dibersihkan dan dalam kondisi lengkap. Unggah foto fisik alat sebagai bukti otentik pertanggungjawaban aset laboratorium.
+              </p>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openReturnModal('${loan.tiket}')" style="padding: 10px 22px; font-weight: 700; white-space: nowrap;">
             <i class="fa-solid fa-camera"></i> Unggah Bukti Pengembalian
           </button>
         </div>
       ` : ''}
 
+      <!-- 5. Foto Bukti Pengembalian jika sudah diunggah -->
       ${loan.fotoPengembalian ? `
-        <div style="margin-top: 14px; background: var(--bg-surface-elevated); padding: 14px; border-radius: var(--radius-md);">
-          <div style="font-size: 0.84rem; font-weight: 700; color: #10b981; margin-bottom: 6px;">Foto Bukti Pengembalian:</div>
-          <img src="${loan.fotoPengembalian}" alt="Bukti" style="max-height: 160px; border-radius: var(--radius-sm);">
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Kondisi: <strong>${loan.statusKondisi}</strong> | Catatan: ${loan.catatanPengembalian || '-'}</div>
+        <div class="track-photo-box">
+          <div class="track-photo-header">
+            <i class="fa-solid fa-camera-retro"></i>
+            <span>Foto Bukti Fisik Pengembalian Terverifikasi</span>
+          </div>
+          <div class="track-photo-body">
+            <img src="${loan.fotoPengembalian}" alt="Bukti Pengembalian" class="track-photo-img" onclick="window.open(this.src, '_blank')" title="Klik untuk memperbesar foto bukti">
+            <div class="track-photo-meta">
+              <div class="meta-row">
+                <span class="meta-label">Kondisi Fisik:</span>
+                <span class="status-badge ${loan.statusKondisi && loan.statusKondisi.includes('Baik') ? 'tersedia' : 'habis'}">${loan.statusKondisi || 'Baik'}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Tgl Pengembalian:</span>
+                <span class="meta-val"><strong>${loan.tglKembaliAktual || '-'}</strong></span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Verifikator Laboran:</span>
+                <span class="meta-val"><strong>${loan.verifikatorLaboran || 'Hebrianti, S.Pd., M.Si.'}</strong></span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Catatan Laboran / Peminjam:</span>
+                <span class="meta-val">${loan.catatanPengembalian || 'Tidak ada catatan khusus.'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- 6. Warning Klaim Kerusakan jika ada -->
+      ${isDamaged && status === 'Klaim Ganti Rugi' ? `
+        <div class="track-damage-warning">
+          <div style="display: flex; gap: 14px; align-items: flex-start;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.6rem; color: #ef4444; margin-top: 2px;"></i>
+            <div>
+              <h4 style="color: #ef4444; margin: 0 0 6px; font-weight: 800;">Pemberitahuan Kewajiban Ganti Rugi Aset</h4>
+              <p style="margin: 0 0 10px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                Ditemukan kerusakan/kekurangan pada barang inventaris saat pemeriksaan pengembalian. Sesuai Standar Operasional Prosedur (SOP) Laboratorium Tadris IPA IAI YAPNAS Jeneponto, peminjam wajib mengganti spesifikasi yang setara dalam jangka waktu <strong>maksimal 7 (tujuh) hari kerja</strong>.
+              </p>
+              <button class="btn btn-warning btn-sm" onclick="printDamageClaimReceipt('${loan.tiket}')">
+                <i class="fa-solid fa-print"></i> Cetak Berita Acara Kerusakan & Ganti Rugi
+              </button>
+            </div>
+          </div>
         </div>
       ` : ''}
     </div>

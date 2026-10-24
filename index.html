@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261024_01">
+  <link rel="stylesheet" href="css/style.css?v=20261024_02">
   
   <link rel="icon" type="image/png" href="yapnas.png">
 </head>
@@ -915,19 +915,24 @@
           </div>
 
           <div class="track-search-card">
-            <div class="form-row-2" style="align-items: flex-end; margin-bottom: 0;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="trackSearchInput">Masukkan Nomor Tiket atau NIM/NIDN</label>
+            <div class="track-search-inner">
+              <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                <label for="trackSearchInput" class="track-search-label">
+                  <i class="fa-solid fa-magnifying-glass" style="color: #38bdf8;"></i> Masukkan Nomor Tiket atau NIM/NIDN
+                </label>
                 <div class="search-input-wrap">
                   <i class="fa-solid fa-ticket"></i>
-                  <input type="text" id="trackSearchInput" class="form-control" placeholder="Contoh: PNJ-202610-001 atau 2320401005">
+                  <input type="text" id="trackSearchInput" class="form-control" placeholder="Contoh: PNJ-202610-909 atau 2320401005" onkeyup="if(event.key==='Enter') searchTrackingLoan()">
                 </div>
               </div>
-              <div>
-                <button class="btn btn-primary" onclick="searchTrackingLoan()" style="height: 44px;">
+              <div class="track-search-btn-wrap">
+                <button class="btn btn-primary" onclick="searchTrackingLoan()">
                   <i class="fa-solid fa-magnifying-glass"></i> Lacak Status
                 </button>
               </div>
+            </div>
+            <div class="track-search-hint">
+              <i class="fa-solid fa-circle-info"></i> Lacak secara real-time status pengajuan, verifikasi Laboran, masa peminjaman, serta unggah foto fisik alat untuk konfirmasi pengembalian.
             </div>
           </div>
 
@@ -2691,8 +2696,8 @@
   <script src="js/qrcode.min.js"></script>
   <script src="js/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase.js?v=20261024_01"></script>
-  <script src="js/data.js?v=20261024_01"></script>
-  <script src="js/app.js?v=20261024_01"></script>
+  <script src="js/supabase.js?v=20261024_02"></script>
+  <script src="js/data.js?v=20261024_02"></script>
+  <script src="js/app.js?v=20261024_02"></script>
 </body>
 </html>
